@@ -23,4 +23,4 @@ ssh:
 
 logging:
   level:
-    com.github.fonimus: debug
+    com.github.choseongah: debug

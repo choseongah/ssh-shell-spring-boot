@@ -6,7 +6,7 @@
 [![Build Status](https://github.com/fonimus/ssh-shell-spring-boot/actions/workflows/build.yml/badge.svg)](https://github.com/fonimus/ssh-shell-spring-boot/actions/workflows/build.yml)
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=fonimus_ssh-shell-spring-boot&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=fonimus_ssh-shell-spring-boot)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=fonimus_ssh-shell-spring-boot&metric=coverage)](https://sonarcloud.io/dashboard?id=fonimus_ssh-shell-spring-boot)
-[![Maven Central](https://img.shields.io/maven-central/v/com.github.fonimus/ssh-shell-spring-boot-starter.svg?label=maven%20central)](https://search.maven.org/search?q=g:%22com.github.fonimus%22%20AND%20a:%22ssh-shell-spring-boot-starter%22)
+[![Maven Central](https://img.shields.io/maven-central/v/com.github.choseongah/ssh-shell-spring-boot-starter.svg?label=maven%20central)](https://search.maven.org/search?q=g:%22com.github.choseongah%22%20AND%20a:%22ssh-shell-spring-boot-starter%22)
 
 > Spring shell in spring boot application over ssh
 
@@ -33,7 +33,7 @@ visit `spring shell` [website](https://docs.spring.io/spring-shell/docs/3.0.3/do
 ```xml
 
 <dependency>
-    <groupId>com.github.fonimus</groupId>
+    <groupId>com.github.choseongah</groupId>
     <artifactId>ssh-shell-spring-boot-starter</artifactId>
 </dependency>
 ```
@@ -174,7 +174,7 @@ ssh:
     port: 2222
     user: user
     prompt:
-      # in enum: com.github.fonimus.ssh.shell.PromptColor (black, red, green, yellow, blue, magenta, cyan, white, bright)
+      # in enum: com.github.choseongah.ssh.shell.PromptColor (black, red, green, yellow, blue, magenta, cyan, white, bright)
       color: white
       text: 'shell>'
 ```
@@ -223,7 +223,7 @@ visit `spring shell` [website](https://docs.spring.io/spring-shell/docs/3.0.3/do
 
 Instead of using `org.springframework.shell.standard.ShellComponent` annotation,
 you should
-use `com.github.fonimus.ssh.shell.commands.SshShellComponent`:
+use `com.github.choseongah.ssh.shell.commands.SshShellComponent`:
 it is just a conditional `@ShellComponent` with `@ConditionalOnProperty` on
 property **ssh.shell.enable**
 
@@ -233,7 +233,7 @@ Example:
 import org.springframework.shell.standard.ShellCommandGroup;
 import org.springframework.shell.standard.ShellMethod;
 
-import com.github.fonimus.ssh.shell.commands.SshShellComponent;
+import com.github.choseongah.ssh.shell.commands.SshShellComponent;
 
 
 @SshShellComponent
@@ -323,7 +323,7 @@ one.
 | Multiple ``TaskScheduler`` beans named **ts1**, **ts2** in context                                                                                         | Local single-threaded (could not find name **taskScheduler**) |                                               |
 | Multiple ``TaskScheduler`` beans named **taskScheduler**, **ts2**, **ts3** in context                                                                      | **taskScheduler** bean                                        |                                               |
 | Task scheduler specified in method ``SchedulingConfigurer#configureTasks``                                                                                 | Local single-threaded (not set in task)                       |
-| Task scheduler specified in method ``SchedulingConfigurer#configureTasks`` **AND** ``com.github.fonimus.ssh.shell.commands.TasksCommand.setTaskScheduler`` | Scheduler manually set                                        |
+| Task scheduler specified in method ``SchedulingConfigurer#configureTasks`` **AND** ``com.github.choseongah.ssh.shell.commands.TasksCommand.setTaskScheduler`` | Scheduler manually set                                        |
 
 ### Jmx
 
@@ -481,7 +481,7 @@ existing one in the spring context.
 Example:
 
 ```java
-import com.github.fonimus.ssh.shell.SshShellAuthenticationProvider;
+import com.github.choseongah.ssh.shell.SshShellAuthenticationProvider;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -499,13 +499,13 @@ public class CustomPasswordConfiguration {
 
 ## Command helper
 
-A `com.github.fonimus.ssh.shell.SshShellHelper` bean is provided in context to
+A `com.github.choseongah.ssh.shell.SshShellHelper` bean is provided in context to
 help for additional functionalities.
 
 You can either autowire it or inject it in a constructor:
 
 ```java
-import com.github.fonimus.ssh.shell.SshShellHelper;
+import com.github.choseongah.ssh.shell.SshShellHelper;
 
 @SshShellComponent
 public class DemoCommand {
@@ -588,7 +588,7 @@ public class DemoCommand {
 
 #### Table
 
-A builder `com.github.fonimus.ssh.shell.SimpleTableBuilder` is available to
+A builder `com.github.choseongah.ssh.shell.SimpleTableBuilder` is available to
 quickly set up print table.
 
 Quick example:
@@ -640,7 +640,7 @@ Result :
 This method takes an interface to display lines at regular interval.
 
 Every **refresh delay** (here 2
-seconds), `com.github.fonimus.ssh.shell.interactive.InteractiveInput.getLines`
+seconds), `com.github.choseongah.ssh.shell.interactive.InteractiveInput.getLines`
 is
 called.
 
@@ -754,7 +754,7 @@ it will be used as welcome prompt message.
 ## Listeners
 
 An interface is provided in order to receive events on ssh
-sessions : ``com.github.fonimus.ssh.shell.listeners
+sessions : ``com.github.choseongah.ssh.shell.listeners
 .SshShellListener``.
 
 Implement it and define a spring bean in order to receive events.

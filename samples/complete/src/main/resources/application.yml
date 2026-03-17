@@ -54,7 +54,7 @@ management:
 
 logging:
   level:
-    com.github.fonimus: debug
+    com.github.choseongah: debug
 
 info:
   build:
