@@ -14,29 +14,28 @@
  * limitations under the License.
  */
 
-package com.github.choseongah.ssh.shell.providers;
+package com.github.choseongah.ssh.shell.completion;
 
-import com.github.choseongah.ssh.shell.ExtendedCompletionProposal;
-import org.springframework.shell.CompletionContext;
-import org.springframework.shell.CompletionProposal;
-import org.springframework.shell.standard.ValueProvider;
-import org.springframework.stereotype.Component;
+import org.springframework.shell.core.command.completion.CompletionContext;
+import org.springframework.shell.core.command.completion.CompletionProposal;
+import org.springframework.shell.core.command.completion.CompletionProvider;
 
 import java.io.File;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
- * Fixed file value provider (mostly for windows) and allow to not put space after proposal when directory
+ * Fixed file completion provider (mostly for windows) and allow to not put space after proposal when directory.
  */
-@Component
-public class ExtendedFileValueProvider implements ValueProvider {
+public class ExtendedFileCompletionProvider implements CompletionProvider {
 
     @Override
-    public List<CompletionProposal> complete(CompletionContext completionContext) {
+    public List<CompletionProposal> apply(CompletionContext completionContext) {
         String input = completionContext.currentWordUpToCursor();
+        if (input == null) {
+            input = "";
+        }
         int lastSlash = input.lastIndexOf("/");
         File currentDir = lastSlash > -1 ? new File(input.substring(0, lastSlash + 1)) : new File("./");
         String prefix = input.substring(lastSlash + 1);
@@ -46,12 +45,12 @@ public class ExtendedFileValueProvider implements ValueProvider {
             return Collections.emptyList();
         }
         return Arrays.stream(files)
-                .map(f -> new ExtendedCompletionProposal(path(f), f.isFile()))
-                .collect(Collectors.toList());
+                .map(file -> new CompletionProposal(path(file)).complete(file.isFile()))
+                .toList();
     }
 
-    private static String path(File f) {
-        String path = f.getPath().replaceAll("\\\\", "/");
-        return f.isDirectory() ? path + "/" : path;
+    private static String path(File file) {
+        String path = file.getPath().replaceAll("\\\\", "/");
+        return file.isDirectory() ? path + "/" : path;
     }
 }

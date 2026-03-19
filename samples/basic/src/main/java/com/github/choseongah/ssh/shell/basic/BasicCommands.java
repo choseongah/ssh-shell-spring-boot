@@ -27,12 +27,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.jline.terminal.Size;
 import org.jline.utils.AttributedStringBuilder;
 import org.jline.utils.AttributedStyle;
-import org.springframework.shell.standard.EnumValueProvider;
-import org.springframework.shell.standard.ShellMethod;
-import org.springframework.shell.standard.ShellOption;
-import org.springframework.shell.table.BorderStyle;
-import org.springframework.shell.table.SimpleHorizontalAligner;
-import org.springframework.shell.table.SimpleVerticalAligner;
+import org.springframework.shell.core.command.annotation.Argument;
+import org.springframework.shell.core.command.annotation.Command;
+import org.springframework.shell.core.command.annotation.Option;
+import org.springframework.shell.jline.tui.table.BorderStyle;
+import org.springframework.shell.jline.tui.table.SimpleHorizontalAligner;
+import org.springframework.shell.jline.tui.table.SimpleVerticalAligner;
 
 import java.util.Arrays;
 
@@ -53,8 +53,11 @@ public class BasicCommands {
      * @param color   color for the message
      * @return message
      */
-    @ShellMethod("Echo command")
-    public String echo(String message, @ShellOption(defaultValue = ShellOption.NULL, valueProvider = EnumValueProvider.class) PromptColor color) {
+    @Command(name = "echo", description = "Echo command")
+    public String echo(
+            @Argument(index = 0) String message,
+            @Option(longName = "color", description = "Color for the message", defaultValue = "") PromptColor color
+    ) {
         if (color != null) {
             return new AttributedStringBuilder().append(message,
                     AttributedStyle.DEFAULT.foreground(color.toJlineAttributedStyle())).toAnsi();
@@ -68,8 +71,8 @@ public class BasicCommands {
      * @param waitInMillis wait time
      * @return message
      */
-    @ShellMethod(key = "wait", value = "Wait command")
-    public String waitCmd(long waitInMillis) {
+    @Command(name = "wait", description = "Wait command")
+    public String waitCmd(@Argument(index = 0) long waitInMillis) {
         try {
             Thread.sleep(waitInMillis);
         } catch (InterruptedException e) {
@@ -84,7 +87,7 @@ public class BasicCommands {
      *
      * @return pojo
      */
-    @ShellMethod("Pojo command")
+    @Command(name = "pojo", description = "Pojo command")
     public Pojo pojo() {
         return new Pojo("value1", "value2");
     }
@@ -94,7 +97,7 @@ public class BasicCommands {
      *
      * @return welcome message
      */
-    @ShellMethod("Confirmation command")
+    @Command(name = "conf", description = "Confirmation command")
     public String conf() {
         return helper.confirm("Are you sure ?") ? "Great ! Let's do it !" : "Such a shame ...";
     }
@@ -104,7 +107,7 @@ public class BasicCommands {
      *
      * @return size
      */
-    @ShellMethod("Terminal size command")
+    @Command(name = "size", description = "Terminal size command")
     public Size size() {
         return helper.terminalSize();
     }
@@ -114,7 +117,7 @@ public class BasicCommands {
      *
      * @return principal
      */
-    @ShellMethod("Simple table command")
+    @Command(name = "table-simple", description = "Simple table command")
     public String tableSimple() {
         return helper.renderTable(SimpleTable.builder()
                 .column("col1")
@@ -135,7 +138,7 @@ public class BasicCommands {
      *
      * @return principal
      */
-    @ShellMethod("Complex table command")
+    @Command(name = "table-complex", description = "Complex table command")
     public String tableComplex() {
         return helper.renderTable(SimpleTable.builder()
                 .column("col1")

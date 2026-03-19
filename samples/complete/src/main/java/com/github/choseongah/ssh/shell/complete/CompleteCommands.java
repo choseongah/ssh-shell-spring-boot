@@ -23,7 +23,6 @@ import com.github.choseongah.ssh.shell.auth.SshAuthentication;
 import com.github.choseongah.ssh.shell.commands.SshShellComponent;
 import com.github.choseongah.ssh.shell.interactive.Interactive;
 import com.github.choseongah.ssh.shell.interactive.KeyBinding;
-import com.github.choseongah.ssh.shell.providers.ExtendedFileValueProvider;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -35,29 +34,38 @@ import org.jline.utils.AttributedStringBuilder;
 import org.jline.utils.AttributedStyle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.actuate.health.AbstractHealthIndicator;
-import org.springframework.boot.actuate.health.Health;
 import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.shell.Availability;
-import org.springframework.shell.CompletionContext;
-import org.springframework.shell.CompletionProposal;
-import org.springframework.shell.standard.*;
-import org.springframework.shell.table.BorderStyle;
-import org.springframework.shell.table.SimpleHorizontalAligner;
-import org.springframework.shell.table.SimpleVerticalAligner;
+import org.springframework.shell.core.command.annotation.Argument;
+import org.springframework.shell.core.command.annotation.Command;
+import org.springframework.shell.core.command.annotation.Option;
+import org.springframework.shell.core.command.availability.Availability;
+import org.springframework.shell.core.command.completion.CompletionContext;
+import org.springframework.shell.core.command.completion.CompletionProposal;
+import org.springframework.shell.core.command.completion.CompletionProvider;
+import org.springframework.shell.jline.tui.table.BorderStyle;
+import org.springframework.shell.jline.tui.table.SimpleHorizontalAligner;
+import org.springframework.shell.jline.tui.table.SimpleVerticalAligner;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.security.SecureRandom;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
  * Demo command for example
  */
-@SshShellComponent("demo-command")
+@SshShellComponent
 @AllArgsConstructor
-public class CompleteCommands extends AbstractHealthIndicator {
+public class CompleteCommands {
+
+    public static final String ADMIN_AVAILABILITY_PROVIDER = "completeAdminAvailabilityProvider";
+    public static final String CUSTOM_VALUES_PROVIDER = "customValuesProvider";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CompleteCommands.class);
 
@@ -70,10 +78,10 @@ public class CompleteCommands extends AbstractHealthIndicator {
      * @param color   color for the message
      * @return message
      */
-    @ShellMethod("Echo command")
+    @Command(name = "echo", description = "Echo command", completionProvider = CUSTOM_VALUES_PROVIDER)
     public String echo(
-            @ShellOption(valueProvider = CustomValuesProvider.class) String message,
-            @ShellOption(defaultValue = ShellOption.NULL, valueProvider = EnumValueProvider.class) PromptColor color
+            @Argument(index = 0) String message,
+            @Option(longName = "color", description = "Color for the message", defaultValue = "") PromptColor color
     ) {
         if (color != null) {
             return new AttributedStringBuilder().append(message,
@@ -88,8 +96,8 @@ public class CompleteCommands extends AbstractHealthIndicator {
      * @param waitInMillis wait time
      * @return message
      */
-    @ShellMethod(key = "wait", value = "Wait command")
-    public String waitCmd(long waitInMillis) {
+    @Command(name = "wait", description = "Wait command")
+    public String waitCmd(@Argument(index = 0) long waitInMillis) {
         try {
             Thread.sleep(waitInMillis);
         } catch (InterruptedException e) {
@@ -104,7 +112,7 @@ public class CompleteCommands extends AbstractHealthIndicator {
      *
      * @return pojo
      */
-    @ShellMethod("Pojo command")
+    @Command(name = "pojo", description = "Pojo command")
     public Pojo pojo() {
         return new Pojo("value1", "value2");
     }
@@ -114,7 +122,7 @@ public class CompleteCommands extends AbstractHealthIndicator {
      *
      * @return welcome message
      */
-    @ShellMethod("Confirmation command")
+    @Command(name = "conf", description = "Confirmation command")
     public String conf() {
         return helper.confirm("Are you sure ?") ? "Great ! Let's do it !" : "Such a shame ...";
     }
@@ -124,7 +132,7 @@ public class CompleteCommands extends AbstractHealthIndicator {
      *
      * @return size
      */
-    @ShellMethod("Terminal size command")
+    @Command(name = "size", description = "Terminal size command")
     public Size size() {
         return helper.terminalSize();
     }
@@ -134,7 +142,7 @@ public class CompleteCommands extends AbstractHealthIndicator {
      *
      * @return principal
      */
-    @ShellMethod("Simple table command")
+    @Command(name = "table-simple", description = "Simple table command")
     public String tableSimple() {
         return helper.renderTable(SimpleTable.builder()
                 .column("col1")
@@ -155,7 +163,7 @@ public class CompleteCommands extends AbstractHealthIndicator {
      *
      * @return principal
      */
-    @ShellMethod("Complex table command")
+    @Command(name = "table-complex", description = "Complex table command")
     public String tableComplex() {
         return helper.renderTable(SimpleTable.builder()
                 .column("col1")
@@ -184,8 +192,8 @@ public class CompleteCommands extends AbstractHealthIndicator {
      *
      * @param progress current percentage
      */
-    @ShellMethod("Progress command")
-    public void progress(int progress) {
+    @Command(name = "progress", description = "Progress command")
+    public void progress(@Argument(index = 0) int progress) {
         helper.printSuccess(progress + "%");
         helper.print(helper.progress(progress));
     }
@@ -196,10 +204,10 @@ public class CompleteCommands extends AbstractHealthIndicator {
      * @param file     file to get info from
      * @param extended extended provider file to get info from
      */
-    @ShellMethod("File command")
+    @Command(name = "file", description = "File command", completionProvider = "extendedFileCompletionProvider")
     public void file(
-            @ShellOption(valueProvider = FileValueProvider.class, defaultValue = ShellOption.NULL) File file,
-            @ShellOption(valueProvider = ExtendedFileValueProvider.class, defaultValue = ShellOption.NULL) File extended
+            @Argument(index = 0, defaultValue = "") File file,
+            @Argument(index = 1, defaultValue = "") File extended
     ) {
         info(file);
         info(extended);
@@ -223,8 +231,12 @@ public class CompleteCommands extends AbstractHealthIndicator {
      * @param fullscreen fullscreen mode
      * @param delay      delay in ms
      */
-    @ShellMethod("Interactive command")
-    public void interactive(@ShellOption(defaultValue = "false") boolean fullscreen, @ShellOption(defaultValue = "3000") long delay) {
+    @Command(name = "interactive", description = "Interactive command")
+    public void interactive(
+            @Option(longName = "fullscreen", description = "Fullscreen mode", defaultValue = "false")
+            boolean fullscreen,
+            @Option(longName = "delay", description = "Delay in ms", defaultValue = "3000") long delay
+    ) {
 
         KeyBinding binding = KeyBinding.builder()
                 .description("K binding example")
@@ -256,7 +268,7 @@ public class CompleteCommands extends AbstractHealthIndicator {
      *
      * @throws IllegalStateException for example
      */
-    @ShellMethod("Ex command")
+    @Command(name = "ex", description = "Ex command")
     public void ex() {
         throw new IllegalStateException("Test exception message");
     }
@@ -266,7 +278,7 @@ public class CompleteCommands extends AbstractHealthIndicator {
      *
      * @return welcome message
      */
-    @ShellMethod("Welcome command")
+    @Command(name = "welcome", description = "Welcome command")
     public String welcome() {
         helper.printInfo("You are now in the welcome command");
         String name = helper.read("What's your name ?");
@@ -278,8 +290,8 @@ public class CompleteCommands extends AbstractHealthIndicator {
      *
      * @return welcome message
      */
-    @ShellMethod("Admin command")
-    @ShellMethodAvailability("adminAvailability")
+    @Command(name = "admin", description = "Admin command",
+            availabilityProvider = ADMIN_AVAILABILITY_PROVIDER)
     public String admin() {
         return "Finally an administrator !!";
     }
@@ -301,7 +313,7 @@ public class CompleteCommands extends AbstractHealthIndicator {
      *
      * @return principal
      */
-    @ShellMethod("Authentication command")
+    @Command(name = "authentication", description = "Authentication command")
     public SshAuthentication authentication() {
         return helper.getAuthentication();
     }
@@ -309,8 +321,8 @@ public class CompleteCommands extends AbstractHealthIndicator {
     /**
      * Sleep command
      */
-    @ShellMethod("Sleep command")
-    public void sleep(long seconds) throws InterruptedException {
+    @Command(name = "sleep", description = "Sleep command")
+    public void sleep(@Argument(index = 0) long seconds) throws InterruptedException {
         Thread.sleep(seconds * 1000);
     }
 
@@ -319,7 +331,7 @@ public class CompleteCommands extends AbstractHealthIndicator {
      *
      * @return table with ssh env information
      */
-    @ShellMethod("Displays ssh env information")
+    @Command(name = "display-ssh-env", description = "Displays ssh env information")
     public String displaySshEnv() {
         Environment env = helper.getSshEnvironment();
         if (env == null) {
@@ -340,7 +352,7 @@ public class CompleteCommands extends AbstractHealthIndicator {
      *
      * @return table with ssh session information
      */
-    @ShellMethod("Displays ssh session information")
+    @Command(name = "display-ssh-session", description = "Displays ssh session information")
     public String displaySshSession() {
         ServerSession session = helper.getSshSession();
         if (session == null) {
@@ -377,7 +389,7 @@ public class CompleteCommands extends AbstractHealthIndicator {
     /**
      * For scheduled command example
      */
-    @Scheduled(cron = "0/60 * * * * *")
+    @Scheduled(cron = "0/59 * * * * *")
     public void logWithCron() {
         LOGGER.info("In 'cron' scheduled task..");
     }
@@ -391,11 +403,6 @@ public class CompleteCommands extends AbstractHealthIndicator {
         Thread.sleep(100000);
     }
 
-    @Override
-    protected void doHealthCheck(Health.Builder builder) {
-        builder.up().withDetail("a-key", "a-value");
-    }
-
     @Data
     @NoArgsConstructor
     @AllArgsConstructor
@@ -407,15 +414,15 @@ public class CompleteCommands extends AbstractHealthIndicator {
     }
 }
 
-@Component
-class CustomValuesProvider implements ValueProvider {
+@Component(CompleteCommands.CUSTOM_VALUES_PROVIDER)
+class CustomValuesProvider implements CompletionProvider {
 
     private final static String[] VALUES = new String[]{
             "message1", "message2", "message3"
     };
 
     @Override
-    public List<CompletionProposal> complete(CompletionContext completionContext) {
+    public List<CompletionProposal> apply(CompletionContext completionContext) {
         return Arrays.stream(VALUES).map(CompletionProposal::new).collect(Collectors.toList());
     }
 }

@@ -23,13 +23,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.Command;
-import org.jline.reader.Completer;
 import org.jline.reader.LineReader;
 import org.springframework.boot.Banner;
 import org.springframework.core.env.Environment;
-import org.springframework.shell.Shell;
+import org.springframework.shell.core.command.CommandParser;
+import org.springframework.shell.core.command.CommandRegistry;
 import org.springframework.shell.jline.PromptProvider;
-import org.springframework.stereotype.Component;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -40,17 +39,15 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Ssh shell command implementation, which starts threads of SshShellRunnable
- *
- * @see SshShellRunnable
+ * SSH shell command implementation that starts per-session {@link SshShellRunnable}s.
  */
 @Slf4j
-@Component
 @RequiredArgsConstructor
-public class SshShellCommandFactory
-        implements Command {
+public class SshShellCommandFactory implements Command {
 
     public static final ThreadLocal<SshContext> SSH_THREAD_CONTEXT = ThreadLocal.withInitial(() -> null);
+
+    public static final ThreadLocal<SshIO> SSH_IO_CONTEXT = ThreadLocal.withInitial(SshIO::new);
 
     @NonNull
     private final SshShellProperties properties;
@@ -61,34 +58,42 @@ public class SshShellCommandFactory
     @NonNull
     private final Environment environment;
     @NonNull
-    private final Shell shell;
+    private final CommandRegistry commandRegistry;
+    @NonNull
+    private final CommandParser commandParser;
     @NonNull
     private final LineReader lineReader;
     @NonNull
     private final PromptProvider promptProvider;
     @NonNull
-    private Completer completer;
-
-    public static final ThreadLocal<SshIO> SSH_IO_CONTEXT = ThreadLocal.withInitial(SshIO::new);
+    private final SshPostProcessorService postProcessorService;
 
     private final Map<ChannelSession, Thread> threads = new ConcurrentHashMap<>();
 
-    /**
-     * Start ssh session
-     *
-     * @param channelSession ssh channel session
-     * @param sshEnv         ssh environment
-     */
     @Override
     public void start(ChannelSession channelSession, org.apache.sshd.server.Environment sshEnv) {
         SshIO sshIO = SSH_IO_CONTEXT.get();
-        Thread sshThread = new Thread(new ThreadGroup("ssh-shell"), new SshShellRunnable(
-                properties, shellListenerService, shellBanner.orElse(null),
-                shell, lineReader, promptProvider, completer, environment,
-                channelSession, sshEnv, this, sshIO.getIs(), sshIO.getOs(), sshIO.getEc()),
-                "ssh-session-" + System.nanoTime());
+        Thread sshThread = new Thread(
+                new ThreadGroup("ssh-shell"),
+                new SshShellRunnable(
+                        properties,
+                        shellListenerService,
+                        shellBanner.orElse(null),
+                        commandRegistry,
+                        commandParser,
+                        lineReader,
+                        promptProvider,
+                        environment,
+                        postProcessorService,
+                        channelSession,
+                        sshEnv,
+                        sshIO.getIs(),
+                        sshIO.getOs(),
+                        sshIO.getEc()),
+                "ssh-session-" + channelSession.getServerSession().getIoSession().getId());
         sshThread.start();
         threads.put(channelSession, sshThread);
+        SSH_IO_CONTEXT.remove();
         LOGGER.debug("{}: started [{} session(s) currently active]", channelSession, threads.size());
     }
 
@@ -121,11 +126,6 @@ public class SshShellCommandFactory
         SSH_IO_CONTEXT.get().setOs(os);
     }
 
-    /**
-     * List current sessions
-     *
-     * @return current sessions
-     */
     public Map<Long, ChannelSession> listSessions() {
         return threads.keySet().stream()
                 .collect(Collectors.toMap(s -> s.getServerSession().getIoSession().getId(), Function.identity()));

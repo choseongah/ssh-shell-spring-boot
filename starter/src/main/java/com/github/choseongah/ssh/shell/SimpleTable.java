@@ -20,9 +20,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.Singular;
-import org.springframework.shell.table.Aligner;
-import org.springframework.shell.table.BorderStyle;
-import org.springframework.shell.table.TableBuilder;
+import org.springframework.shell.jline.tui.table.Aligner;
+import org.springframework.shell.jline.tui.table.BorderStyle;
+import org.springframework.shell.jline.tui.table.TableBuilder;
 
 import java.util.List;
 

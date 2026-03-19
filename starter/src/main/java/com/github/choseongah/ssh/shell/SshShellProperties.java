@@ -17,6 +17,7 @@
 package com.github.choseongah.ssh.shell;
 
 import com.github.choseongah.ssh.shell.commands.CommandProperties;
+import com.github.choseongah.ssh.shell.commands.DatasourceCommand;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
@@ -30,7 +31,6 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.github.choseongah.ssh.shell.SshShellProperties.SSH_SHELL_PREFIX;
-import static com.github.choseongah.ssh.shell.commands.DatasourceCommand.COMMAND_DATA_SOURCE_UPDATE;
 
 /**
  * Ssh shell properties (prefix : {@link SshShellProperties#SSH_SHELL_PREFIX})
@@ -46,22 +46,8 @@ public class SshShellProperties {
 
     public static final String DISABLE_SSH_SHELL = SSH_SHELL_ENABLE + "=false";
 
-    public static final String SPRING_SHELL_AUTO_CONFIG_CLASSES = "org.springframework.shell.boot.ExitCodeAutoConfiguration," +
-            "org.springframework.shell.boot.ShellContextAutoConfiguration," +
-            "org.springframework.shell.boot.SpringShellAutoConfiguration," +
-            "org.springframework.shell.boot.ShellRunnerAutoConfiguration," +
-            "org.springframework.shell.boot.ApplicationRunnerAutoConfiguration," +
-            "org.springframework.shell.boot.CommandCatalogAutoConfiguration," +
-            "org.springframework.shell.boot.LineReaderAutoConfiguration," +
-            "org.springframework.shell.boot.CompleterAutoConfiguration," +
-            "org.springframework.shell.boot.UserConfigAutoConfiguration," +
-            "org.springframework.shell.boot.JLineAutoConfiguration," +
-            "org.springframework.shell.boot.JLineShellAutoConfiguration," +
-            "org.springframework.shell.boot.ParameterResolverAutoConfiguration," +
-            "org.springframework.shell.boot.StandardAPIAutoConfiguration," +
-            "org.springframework.shell.boot.ThemingAutoConfiguration," +
-            "org.springframework.shell.boot.StandardCommandsAutoConfiguration," +
-            "org.springframework.shell.boot.ComponentFlowAutoConfiguration";
+    public static final String SPRING_SHELL_AUTO_CONFIG_CLASSES =
+            "org.springframework.shell.core.autoconfigure.SpringShellAutoConfiguration";
 
     public static final String DISABLE_SPRING_SHELL_AUTO_CONFIG =
             "spring.autoconfigure.exclude=" + SPRING_SHELL_AUTO_CONFIG_CLASSES;
@@ -125,7 +111,6 @@ public class SshShellProperties {
         private String text = "shell>";
 
         private PromptColor color = PromptColor.WHITE;
-
     }
 
     /**
@@ -135,10 +120,8 @@ public class SshShellProperties {
     public static class Commands {
 
         @NestedConfigurationProperty
-        private CommandProperties actuator = CommandProperties.withAuthorizedRoles(new ArrayList<>(Collections.singletonList(ACTUATOR_ROLE)));
-
-        @NestedConfigurationProperty
-        private CommandProperties jmx = new CommandProperties();
+        private CommandProperties actuator = CommandProperties.withAuthorizedRoles(
+                new ArrayList<>(Collections.singletonList(ACTUATOR_ROLE)));
 
         @NestedConfigurationProperty
         private CommandProperties system = new CommandProperties();
@@ -156,7 +139,11 @@ public class SshShellProperties {
         private CommandProperties stacktrace = new CommandProperties();
 
         @NestedConfigurationProperty
-        private CommandProperties datasource = CommandProperties.withExcludedByDefault(new ArrayList<>(Collections.singletonList(COMMAND_DATA_SOURCE_UPDATE)));
+        private CommandProperties datasource = CommandProperties.withExcludedByDefault(
+                new ArrayList<>(Collections.singletonList(DatasourceCommand.COMMAND_DATA_SOURCE_UPDATE)));
+
+        @NestedConfigurationProperty
+        private CommandProperties jmx = new CommandProperties();
 
         @NestedConfigurationProperty
         private CommandProperties postprocessors = CommandProperties.notRestrictedByDefault();
@@ -164,5 +151,4 @@ public class SshShellProperties {
         @NestedConfigurationProperty
         private CommandProperties manageSessions = CommandProperties.disabledByDefault();
     }
-
 }

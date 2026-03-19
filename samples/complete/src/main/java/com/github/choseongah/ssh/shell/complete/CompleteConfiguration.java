@@ -20,17 +20,17 @@ import com.github.choseongah.ssh.shell.commands.TasksCommand;
 import com.github.choseongah.ssh.shell.listeners.SshShellListener;
 import com.github.choseongah.ssh.shell.postprocess.PostProcessor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.actuate.web.exchanges.HttpExchangeRepository;
-import org.springframework.boot.actuate.web.exchanges.InMemoryHttpExchangeRepository;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.context.annotation.Primary;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.SchedulingConfigurer;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.config.ScheduledTaskRegistrar;
+import org.springframework.shell.core.command.availability.AvailabilityProvider;
 import org.springframework.util.CollectionUtils;
 
 import javax.sql.DataSource;
@@ -47,7 +47,7 @@ public class CompleteConfiguration implements SchedulingConfigurer {
 
     private final TasksCommand tasksCommand;
 
-    public CompleteConfiguration(TasksCommand tasksCommand) {
+    public CompleteConfiguration(@Lazy TasksCommand tasksCommand) {
         this.tasksCommand = tasksCommand;
     }
 
@@ -127,6 +127,11 @@ public class CompleteConfiguration implements SchedulingConfigurer {
     }
 
     @Bean
+    public AvailabilityProvider completeAdminAvailabilityProvider(CompleteCommands completeCommands) {
+        return completeCommands::adminAvailability;
+    }
+
+    @Bean
     @Primary
     @ConfigurationProperties(prefix = "spring.first-datasource")
     public DataSourceProperties firstDsProps() {
@@ -166,11 +171,6 @@ public class CompleteConfiguration implements SchedulingConfigurer {
         threadPoolTaskScheduler.setPoolSize(6);
         threadPoolTaskScheduler.setThreadNamePrefix("my-pool2-");
         return threadPoolTaskScheduler;
-    }
-
-    @Bean
-    public HttpExchangeRepository httpTraceRepository() {
-        return new InMemoryHttpExchangeRepository();
     }
 
     @Override

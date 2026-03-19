@@ -20,30 +20,23 @@ import com.github.choseongah.ssh.shell.SimpleTable;
 import com.github.choseongah.ssh.shell.SshShellHelper;
 import com.github.choseongah.ssh.shell.SshShellProperties;
 import com.github.choseongah.ssh.shell.manage.SshShellSessionManager;
-import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.session.ServerSession;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.shell.Availability;
-import org.springframework.shell.CompletionContext;
-import org.springframework.shell.CompletionProposal;
-import org.springframework.shell.standard.*;
-import org.springframework.stereotype.Component;
+import org.springframework.shell.core.command.availability.Availability;
+import org.springframework.shell.core.command.annotation.Command;
+import org.springframework.shell.core.command.annotation.Option;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static com.github.choseongah.ssh.shell.manage.SshShellSessionManager.sessionUserName;
 
 /**
  * Command to manage ssh sessions, not available by default
  */
-@SshShellComponent
-@ShellCommandGroup("Manage Sessions Commands")
+@SshShellComponent("sshManageSessionsCommand")
 @ConditionalOnProperty(
         name = SshShellProperties.SSH_SHELL_PREFIX + ".commands." + ManageSessionsCommand.GROUP + ".create",
         havingValue = "true", matchIfMissing = true
@@ -54,6 +47,11 @@ public class ManageSessionsCommand extends AbstractCommand {
     private static final String COMMAND_MANAGE_SESSIONS_LIST = GROUP + "-list";
     private static final String COMMAND_MANAGE_SESSIONS_INFO = GROUP + "-info";
     private static final String COMMAND_MANAGE_SESSIONS_STOP = GROUP + "-stop";
+    public static final String LIST_AVAILABILITY_PROVIDER = "manageSessionsListAvailabilityProvider";
+    public static final String INFO_AVAILABILITY_PROVIDER = "manageSessionsInfoAvailabilityProvider";
+    public static final String STOP_AVAILABILITY_PROVIDER = "manageSessionsStopAvailabilityProvider";
+    public static final String INFO_COMPLETION_PROVIDER = "manageSessionsInfoCompletionProvider";
+    public static final String STOP_COMPLETION_PROVIDER = "manageSessionsStopCompletionProvider";
 
     private final SshShellSessionManager sessionManager;
 
@@ -63,8 +61,8 @@ public class ManageSessionsCommand extends AbstractCommand {
         this.sessionManager = sessionManager;
     }
 
-    @ShellMethod(key = COMMAND_MANAGE_SESSIONS_LIST, value = "Displays active sessions")
-    @ShellMethodAvailability("manageSessionsListAvailability")
+    @Command(name = COMMAND_MANAGE_SESSIONS_LIST, group = "Manage Sessions Commands",
+            description = "Displays active sessions", availabilityProvider = LIST_AVAILABILITY_PROVIDER)
     public String manageSessionsList() {
         Map<Long, ChannelSession> sessions = sessionManager.listSessions();
 
@@ -82,9 +80,11 @@ public class ManageSessionsCommand extends AbstractCommand {
         return helper.renderTable(builder.build());
     }
 
-    @ShellMethod(key = COMMAND_MANAGE_SESSIONS_INFO, value = "Displays session")
-    @ShellMethodAvailability("manageSessionsInfoAvailability")
-    public String manageSessionsInfo(@ShellOption(help = "Session identifier", valueProvider = SessionsValuesProvider.class) long sessionId) {
+    @Command(name = COMMAND_MANAGE_SESSIONS_INFO, group = "Manage Sessions Commands",
+            description = "Displays session", availabilityProvider = INFO_AVAILABILITY_PROVIDER,
+            completionProvider = INFO_COMPLETION_PROVIDER)
+    public String manageSessionsInfo(
+            @Option(longName = "session-id", description = "Session identifier", required = true) long sessionId) {
         ChannelSession session = sessionManager.getSession(sessionId);
         if (session == null) {
             return helper.getError("Session [" + sessionId + "] not found");
@@ -92,12 +92,14 @@ public class ManageSessionsCommand extends AbstractCommand {
         return helper.getSuccess(sessionTable(session.getServerSession()));
     }
 
-    @ShellMethod(key = COMMAND_MANAGE_SESSIONS_STOP, value = "Stop session")
-    @ShellMethodAvailability("manageSessionsStopAvailability")
-    public String manageSessionsStop(@ShellOption(help = "Session identifier", valueProvider = SessionsValuesProvider.class) long sessionId) {
-        return sessionManager.stopSession(sessionId) ?
-                helper.getSuccess("Session [" + sessionId + "] stopped") :
-                helper.getWarning("Unable to stop session [" + sessionId + "], maybe it does not exist");
+    @Command(name = COMMAND_MANAGE_SESSIONS_STOP, group = "Manage Sessions Commands",
+            description = "Stop session", availabilityProvider = STOP_AVAILABILITY_PROVIDER,
+            completionProvider = STOP_COMPLETION_PROVIDER)
+    public String manageSessionsStop(
+            @Option(longName = "session-id", description = "Session identifier", required = true) long sessionId) {
+        return sessionManager.stopSession(sessionId)
+                ? helper.getSuccess("Session [" + sessionId + "] stopped")
+                : helper.getWarning("Unable to stop session [" + sessionId + "], maybe it does not exist");
     }
 
     private String sessionTable(ServerSession session) {
@@ -111,30 +113,15 @@ public class ManageSessionsCommand extends AbstractCommand {
                 .build());
     }
 
-    private Availability manageSessionsListAvailability() {
+    public Availability manageSessionsListAvailability() {
         return availability(GROUP, COMMAND_MANAGE_SESSIONS_LIST);
     }
 
-    private Availability manageSessionsInfoAvailability() {
+    public Availability manageSessionsInfoAvailability() {
         return availability(GROUP, COMMAND_MANAGE_SESSIONS_INFO);
     }
 
-    private Availability manageSessionsStopAvailability() {
+    public Availability manageSessionsStopAvailability() {
         return availability(GROUP, COMMAND_MANAGE_SESSIONS_STOP);
-    }
-}
-
-@Slf4j
-@Component
-@AllArgsConstructor
-class SessionsValuesProvider
-        implements ValueProvider {
-
-    @Lazy
-    private final SshShellSessionManager sessionManager;
-
-    @Override
-    public List<CompletionProposal> complete(CompletionContext completionContext) {
-        return sessionManager.listSessions().keySet().stream().map(id -> new CompletionProposal(id.toString())).collect(Collectors.toList());
     }
 }

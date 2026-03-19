@@ -22,7 +22,6 @@ import com.github.choseongah.ssh.shell.SshShellProperties;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -30,31 +29,39 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.core.task.TaskRejectedException;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ConcurrentTaskScheduler;
-import org.springframework.scheduling.config.*;
+import org.springframework.scheduling.config.CronTask;
+import org.springframework.scheduling.config.FixedDelayTask;
+import org.springframework.scheduling.config.FixedRateTask;
+import org.springframework.scheduling.config.IntervalTask;
+import org.springframework.scheduling.config.ScheduledTask;
+import org.springframework.scheduling.config.ScheduledTaskHolder;
+import org.springframework.scheduling.config.Task;
 import org.springframework.scheduling.support.ScheduledMethodRunnable;
 import org.springframework.scheduling.support.SimpleTriggerContext;
-import org.springframework.shell.Availability;
-import org.springframework.shell.CompletionContext;
-import org.springframework.shell.CompletionProposal;
-import org.springframework.shell.standard.*;
-import org.springframework.stereotype.Component;
+import org.springframework.shell.core.command.availability.Availability;
+import org.springframework.shell.core.command.annotation.Command;
+import org.springframework.shell.core.command.annotation.Option;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledFuture;
-import java.util.stream.Collectors;
 
 import static org.springframework.scheduling.annotation.ScheduledAnnotationBeanPostProcessor.DEFAULT_TASK_SCHEDULER_BEAN_NAME;
 
 /**
  * Command to list available post processors
  */
-@SshShellComponent
-@ShellCommandGroup("Tasks Commands")
+@SshShellComponent("sshTasksCommand")
 @ConditionalOnBean(ScheduledTaskHolder.class)
 @ConditionalOnProperty(
         name = SshShellProperties.SSH_SHELL_PREFIX + ".commands." + TasksCommand.GROUP + ".create",
@@ -68,8 +75,15 @@ public class TasksCommand extends AbstractCommand implements DisposableBean {
     private static final String COMMAND_TASKS_RESTART = GROUP + "-restart";
     private static final String COMMAND_TASKS_SINGLE = GROUP + "-single";
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+    public static final String LIST_AVAILABILITY_PROVIDER = "tasksListAvailabilityProvider";
+    public static final String STOP_AVAILABILITY_PROVIDER = "tasksStopAvailabilityProvider";
+    public static final String RESTART_AVAILABILITY_PROVIDER = "tasksRestartAvailabilityProvider";
+    public static final String SINGLE_AVAILABILITY_PROVIDER = "tasksSingleAvailabilityProvider";
+    public static final String STOP_COMPLETION_PROVIDER = "tasksStopCompletionProvider";
+    public static final String RESTART_COMPLETION_PROVIDER = "tasksRestartCompletionProvider";
+    public static final String SINGLE_COMPLETION_PROVIDER = "tasksSingleCompletionProvider";
 
-    private final Collection<ScheduledTaskHolder> scheduledTaskHolders;
+    private final java.util.Collection<ScheduledTaskHolder> scheduledTaskHolders;
 
     private final Map<String, TaskState> statesByName = new HashMap<>();
 
@@ -78,7 +92,8 @@ public class TasksCommand extends AbstractCommand implements DisposableBean {
     private TaskScheduler taskScheduler;
 
     public TasksCommand(SshShellHelper helper, SshShellProperties properties,
-                        Collection<ScheduledTaskHolder> scheduledTaskHolders, ApplicationContext applicationContext) {
+                        java.util.Collection<ScheduledTaskHolder> scheduledTaskHolders,
+                        ApplicationContext applicationContext) {
         super(helper, properties, properties.getCommands().getTasks());
         this.scheduledTaskHolders = scheduledTaskHolders;
         this.applicationContext = applicationContext;
@@ -122,11 +137,14 @@ public class TasksCommand extends AbstractCommand implements DisposableBean {
         this.statesByName.values().stream().filter(s -> s.getFuture() != null).forEach(s -> s.getFuture().cancel(true));
     }
 
-    @ShellMethod(key = COMMAND_TASKS_LIST, value = "Display the available scheduled tasks")
-    @ShellMethodAvailability("tasksListAvailability")
+    @Command(name = COMMAND_TASKS_LIST, group = "Tasks Commands",
+            description = "Display the available scheduled tasks",
+            availabilityProvider = LIST_AVAILABILITY_PROVIDER)
     public String tasksList(
-            @ShellOption(help = "Filter on status (running, stopped)", defaultValue = ShellOption.NULL, valueProvider = EnumValueProvider.class) TaskStatus status,
-            @ShellOption(help = "Refresh task from context", defaultValue = "false") boolean refresh
+            @Option(longName = "status", description = "Filter on status (running, stopped)", defaultValue = "")
+            TaskStatus status,
+            @Option(longName = "refresh", description = "Refresh task from context", defaultValue = "false")
+            boolean refresh
     ) {
         refresh(refresh);
 
@@ -147,15 +165,15 @@ public class TasksCommand extends AbstractCommand implements DisposableBean {
                         line.add("cron");
                         line.add("expression : " + cronTask.getExpression());
                         Instant next = cronTask.getTrigger().nextExecution(new SimpleTriggerContext());
-                        line.add(next == null ? "-" :
-                                FORMATTER.format(next.atOffset(ZoneOffset.UTC).toLocalDateTime()));
-                    } else if (task instanceof FixedDelayTask) {
+                        line.add(next == null ? "-"
+                                : FORMATTER.format(next.atOffset(ZoneOffset.UTC).toLocalDateTime()));
+                    } else if (task instanceof FixedDelayTask fixedDelayTask) {
                         line.add("fixed-delay");
-                        line.add(getTrigger((FixedDelayTask) task));
+                        line.add(getTrigger(fixedDelayTask));
                         line.add("-");
-                    } else if (task instanceof FixedRateTask) {
+                    } else if (task instanceof FixedRateTask fixedRateTask) {
                         line.add("fixed-rate");
-                        line.add(getTrigger((FixedRateTask) task));
+                        line.add(getTrigger(fixedRateTask));
                         line.add("-");
                     } else {
                         line.add("custom");
@@ -163,7 +181,6 @@ public class TasksCommand extends AbstractCommand implements DisposableBean {
                         line.add("-");
                     }
                 } else {
-                    // In case the task was started only once and from this class
                     line.add(state.getFuture() == null || state.getFuture().isDone() ? TaskStatus.stopped : TaskStatus.running);
                     line.add("single");
                     line.add("-");
@@ -179,7 +196,6 @@ public class TasksCommand extends AbstractCommand implements DisposableBean {
     private void refresh(boolean refresh) {
         if (this.statesByName.isEmpty() || refresh) {
             if (refresh) {
-                // Remove single executions that are done
                 this.statesByName.entrySet().removeIf(
                         e -> e.getValue().getScheduledTask() == null
                                 && (e.getValue().getFuture() == null || e.getValue().getFuture().isDone())
@@ -195,11 +211,12 @@ public class TasksCommand extends AbstractCommand implements DisposableBean {
         }
     }
 
-    @ShellMethod(key = COMMAND_TASKS_STOP, value = "Stop all or specified task(s)")
-    @ShellMethodAvailability("tasksStopAvailability")
+    @Command(name = COMMAND_TASKS_STOP, group = "Tasks Commands",
+            description = "Stop all or specified task(s)",
+            availabilityProvider = STOP_AVAILABILITY_PROVIDER, completionProvider = STOP_COMPLETION_PROVIDER)
     public String tasksStop(
-            @ShellOption(help = "Stop all tasks", defaultValue = "false") boolean all,
-            @ShellOption(help = "Task name to stop", valueProvider = TaskNameValuesProvider.class, defaultValue = ShellOption.NULL) String task
+            @Option(longName = "all", description = "Stop all tasks", defaultValue = "false") boolean all,
+            @Option(longName = "task", description = "Task name to stop", defaultValue = "") String task
     ) {
 
         List<String> toStop = listTasks(all, task, true);
@@ -235,11 +252,12 @@ public class TasksCommand extends AbstractCommand implements DisposableBean {
         return helper.getSuccess("Tasks " + stopped + " stopped");
     }
 
-    @ShellMethod(key = COMMAND_TASKS_RESTART, value = "Restart all or specified task(s)")
-    @ShellMethodAvailability("tasksRestartAvailability")
+    @Command(name = COMMAND_TASKS_RESTART, group = "Tasks Commands",
+            description = "Restart all or specified task(s)",
+            availabilityProvider = RESTART_AVAILABILITY_PROVIDER, completionProvider = RESTART_COMPLETION_PROVIDER)
     public String tasksRestart(
-            @ShellOption(help = "Stop all tasks", defaultValue = "false") boolean all,
-            @ShellOption(help = "Task name to stop", valueProvider = TaskNameValuesProvider.class, defaultValue = ShellOption.NULL) String task
+            @Option(longName = "all", description = "Stop all tasks", defaultValue = "false") boolean all,
+            @Option(longName = "task", description = "Task name to stop", defaultValue = "") String task
     ) {
 
         List<String> toRestart = listTasks(all, task, false);
@@ -257,16 +275,17 @@ public class TasksCommand extends AbstractCommand implements DisposableBean {
                 if (state.getStatus() == TaskStatus.stopped) {
                     Task taskObj = state.getScheduledTask().getTask();
                     ScheduledFuture<?> future = null;
-                    if (taskObj instanceof CronTask) {
+                    if (taskObj instanceof CronTask cronTask) {
                         future = taskScheduler().schedule(state.getScheduledTask().getTask().getRunnable(),
-                                ((CronTask) taskObj).getTrigger());
-                    } else if (taskObj instanceof FixedDelayTask) {
-                        future =
-                                taskScheduler().scheduleWithFixedDelay(state.getScheduledTask().getTask().getRunnable(),
-                                        ((FixedDelayTask) taskObj).getIntervalDuration());
-                    } else if (taskObj instanceof FixedRateTask) {
-                        future = taskScheduler().scheduleAtFixedRate(state.getScheduledTask().getTask().getRunnable(),
-                                ((FixedRateTask) taskObj).getIntervalDuration());
+                                cronTask.getTrigger());
+                    } else if (taskObj instanceof FixedDelayTask fixedDelayTask) {
+                        future = taskScheduler().scheduleWithFixedDelay(
+                                state.getScheduledTask().getTask().getRunnable(),
+                                fixedDelayTask.getIntervalDuration());
+                    } else if (taskObj instanceof FixedRateTask fixedRateTask) {
+                        future = taskScheduler().scheduleAtFixedRate(
+                                state.getScheduledTask().getTask().getRunnable(),
+                                fixedRateTask.getIntervalDuration());
                     } else {
                         helper.printWarning("Task [" + taskName + "] of class [" + taskObj.getClass().getName() + "] "
                                 + "cannot be restarted.");
@@ -280,7 +299,6 @@ public class TasksCommand extends AbstractCommand implements DisposableBean {
                     helper.printWarning("Task [" + taskName + "] already running.");
                 }
             } else {
-                // If the user tries to launch again a task execution launched from 'tasks-single'
                 helper.printWarning("Cannot relaunch this task execution [" + task + "]. Use the original task instead.");
             }
         }
@@ -290,11 +308,13 @@ public class TasksCommand extends AbstractCommand implements DisposableBean {
         return helper.getSuccess("Tasks " + started + " restarted");
     }
 
-    @ShellMethod(key = COMMAND_TASKS_SINGLE, value = "Launch one execution of all or specified task(s)")
-    @ShellMethodAvailability("tasksSingleAvailability")
+    @Command(name = COMMAND_TASKS_SINGLE, group = "Tasks Commands",
+            description = "Launch one execution of all or specified task(s)",
+            availabilityProvider = SINGLE_AVAILABILITY_PROVIDER, completionProvider = SINGLE_COMPLETION_PROVIDER)
     public String tasksSingle(
-            @ShellOption(help = "Launch one execution of all tasks", defaultValue = "false") boolean all,
-            @ShellOption(help = "Task name to launch once", valueProvider = TaskNameValuesProvider.class, defaultValue = ShellOption.NULL) String task
+            @Option(longName = "all", description = "Launch one execution of all tasks", defaultValue = "false")
+            boolean all,
+            @Option(longName = "task", description = "Task name to launch once", defaultValue = "") String task
     ) {
 
         List<String> toLaunch = listTasks(all, task, true);
@@ -308,15 +328,14 @@ public class TasksCommand extends AbstractCommand implements DisposableBean {
             if (state.getScheduledTask() != null) {
                 try {
                     String executionId = taskName + "-" + generateExecutionId();
-                    // Will run the Runnable immediately or as soon as possible
-                    ScheduledFuture<?> future = taskScheduler().schedule(state.getScheduledTask().getTask().getRunnable(), Instant.now());
+                    ScheduledFuture<?> future = taskScheduler().schedule(
+                            state.getScheduledTask().getTask().getRunnable(), Instant.now());
                     statesByName.put(executionId, new TaskState(executionId, null, TaskStatus.running, future));
                     started.add(executionId);
                 } catch (TaskRejectedException e) {
                     helper.printError("The task '" + taskName + "' was not accepted for internal reasons");
                 }
             } else if (task != null) {
-                // If the user tries to launch again a task execution launched from this method
                 helper.printWarning("Cannot relaunch this task execution [" + task + "]. Use the original task instead.");
             }
         }
@@ -354,27 +373,62 @@ public class TasksCommand extends AbstractCommand implements DisposableBean {
     }
 
     private static String getTaskName(Runnable runnable) {
-        if (runnable instanceof ScheduledMethodRunnable) {
-            Method method = ((ScheduledMethodRunnable) runnable).getMethod();
+        Runnable target = unwrapRunnable(runnable);
+        if (target instanceof ScheduledMethodRunnable scheduledMethodRunnable) {
+            Method method = scheduledMethodRunnable.getMethod();
             return method.getDeclaringClass().getName() + "." + method.getName();
         } else {
-            return runnable.getClass().getName();
+            return target.getClass().getName();
         }
     }
 
-    private Availability tasksListAvailability() {
+    private static Runnable unwrapRunnable(Runnable runnable) {
+        Runnable current = runnable;
+        while (current != null) {
+            Runnable delegate = getDelegate(current);
+            if (delegate == null || delegate == current) {
+                return current;
+            }
+            current = delegate;
+        }
+        return runnable;
+    }
+
+    private static Runnable getDelegate(Runnable runnable) {
+        Class<?> type = runnable.getClass();
+        while (type != null && type != Object.class) {
+            for (String fieldName : List.of("runnable", "delegate", "task")) {
+                try {
+                    Field field = type.getDeclaredField(fieldName);
+                    if (!Runnable.class.isAssignableFrom(field.getType())) {
+                        continue;
+                    }
+                    field.setAccessible(true);
+                    return (Runnable) field.get(runnable);
+                } catch (NoSuchFieldException e) {
+                    // Try with the next field name
+                } catch (IllegalAccessException e) {
+                    return null;
+                }
+            }
+            type = type.getSuperclass();
+        }
+        return null;
+    }
+
+    public Availability tasksListAvailability() {
         return availability(GROUP, COMMAND_TASKS_LIST);
     }
 
-    private Availability tasksStopAvailability() {
+    public Availability tasksStopAvailability() {
         return availability(GROUP, COMMAND_TASKS_STOP);
     }
 
-    private Availability tasksRestartAvailability() {
+    public Availability tasksRestartAvailability() {
         return availability(GROUP, COMMAND_TASKS_RESTART);
     }
 
-    private Availability tasksSingleAvailability() {
+    public Availability tasksSingleAvailability() {
         return availability(GROUP, COMMAND_TASKS_SINGLE);
     }
 
@@ -400,23 +454,5 @@ public class TasksCommand extends AbstractCommand implements DisposableBean {
      */
     public enum TaskStatus {
         running, stopped
-    }
-
-}
-
-@Slf4j
-@Component
-@ConditionalOnBean(ScheduledTaskHolder.class)
-class TaskNameValuesProvider implements ValueProvider {
-
-    private final TasksCommand tasksCommand;
-
-    TaskNameValuesProvider(TasksCommand tasksCommand) {
-        this.tasksCommand = tasksCommand;
-    }
-
-    @Override
-    public List<CompletionProposal> complete(CompletionContext completionContext) {
-        return tasksCommand.getTaskNames().stream().map(CompletionProposal::new).collect(Collectors.toList());
     }
 }

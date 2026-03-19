@@ -16,212 +16,78 @@
 
 package com.github.choseongah.ssh.shell.commands;
 
-import com.github.choseongah.ssh.shell.ExtendedShell;
-import com.github.choseongah.ssh.shell.SshContext;
 import com.github.choseongah.ssh.shell.SshShellHelper;
 import com.github.choseongah.ssh.shell.SshShellProperties;
-import com.github.choseongah.ssh.shell.interactive.Interactive;
-import com.github.choseongah.ssh.shell.interactive.InteractiveInputIO;
-import com.github.choseongah.ssh.shell.interactive.StoppableInteractiveInput;
-import com.github.choseongah.ssh.shell.postprocess.PostProcessorObject;
-import com.github.choseongah.ssh.shell.postprocess.provided.SavePostProcessor;
-import com.github.choseongah.ssh.shell.providers.ExtendedFileValueProvider;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
-import org.jline.reader.Parser;
-import org.jline.utils.AttributedString;
-import org.springframework.beans.factory.DisposableBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.shell.Availability;
-import org.springframework.shell.jline.FileInputProvider;
-import org.springframework.shell.standard.*;
-import org.springframework.shell.standard.commands.Script;
+import org.springframework.shell.core.FileInputProvider;
+import org.springframework.shell.core.NonInteractiveShellRunner;
+import org.springframework.shell.core.command.CommandContext;
+import org.springframework.shell.core.command.CommandParser;
+import org.springframework.shell.core.command.CommandRegistry;
+import org.springframework.shell.core.command.annotation.Command;
+import org.springframework.shell.core.command.availability.Availability;
+import org.springframework.shell.core.command.annotation.Option;
 
 import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.Reader;
-import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
-import static com.github.choseongah.ssh.shell.SshShellCommandFactory.SSH_THREAD_CONTEXT;
 
 /**
- * Override history command to get history per user if not shared
+ * Script command
  */
-@Slf4j
-@SshShellComponent
-@ShellCommandGroup("Built-In Commands")
+@SshShellComponent("sshScriptCommand")
 @ConditionalOnProperty(
         name = SshShellProperties.SSH_SHELL_PREFIX + ".commands." + ScriptCommand.GROUP + ".create",
         havingValue = "true", matchIfMissing = true
 )
-@Lazy
-public class ScriptCommand extends AbstractCommand
-        implements Script.Command, DisposableBean {
+public class ScriptCommand extends AbstractCommand {
 
     public static final String GROUP = "script";
     public static final String COMMAND_SCRIPT = GROUP;
+    public static final String AVAILABILITY_PROVIDER = "scriptAvailabilityProvider";
+    public static final String COMPLETION_PROVIDER = "scriptCompletionProvider";
 
-    private final Parser parser;
+    private final CommandParser commandParser;
 
-    private ExecutorService executor;
+    private final CommandRegistry commandRegistry;
 
-    private ScriptStatus status;
-
-    public ScriptCommand(Parser parser, SshShellHelper helper, SshShellProperties properties) {
+    public ScriptCommand(CommandParser commandParser, CommandRegistry commandRegistry,
+                         SshShellHelper helper, SshShellProperties properties) {
         super(helper, properties, properties.getCommands().getScript());
-        this.parser = parser;
+        this.commandParser = commandParser;
+        this.commandRegistry = commandRegistry;
     }
 
-    @Override
-    public void destroy() {
-        if (executor != null) {
-            executor.shutdownNow();
-        }
-    }
-
-    @ShellMethod(key = COMMAND_SCRIPT, value = "Read and execute commands from a file.")
-    @ShellMethodAvailability("scriptAvailability")
+    @Command(
+            name = COMMAND_SCRIPT,
+            group = "Built-In Commands",
+            description = "Execute commands from a script file",
+            availabilityProvider = AVAILABILITY_PROVIDER,
+            completionProvider = COMPLETION_PROVIDER
+    )
     public void script(
-            @ShellOption(help = "File to run commands from", defaultValue = ShellOption.NULL, valueProvider = ExtendedFileValueProvider.class) File file,
-            @ShellOption(help = "File to write results to", defaultValue = ShellOption.NULL, valueProvider = ExtendedFileValueProvider.class) File output,
-            @ShellOption(help = "File to run commands from", defaultValue = "false") boolean background,
-            @ShellOption(help = "Action : execute, stop, status (default is execute)", defaultValue = "execute",
-                    valueProvider = EnumValueProvider.class) ScriptAction action,
-            @ShellOption(help = "Do not launch status directly to get interactive process", defaultValue = "false") boolean notInteractive
-    ) throws IOException {
-        if (action == ScriptAction.execute) {
-            if (file == null) {
-                throw new IllegalArgumentException("File is mandatory");
-            }
-            if (!background) {
-                run(file);
-            } else {
-                if (output == null) {
-                    throw new IllegalArgumentException("Cannot use background option without output option for commands results");
-                } else if (output.isDirectory()) {
-                    throw new IllegalArgumentException("Cannot use given output : it is a directory [" + output.getAbsolutePath() + "]");
-                } else if (!output.exists() && !output.createNewFile()) {
-                    throw new IllegalArgumentException("Cannot use given output : unable to create file [" + output.getAbsolutePath() + "]");
-                }
-                if (status != null && !status.getFuture().isDone()) {
-                    helper.printWarning("Script already running in background. Aborting.");
-                    return;
-                }
-                try (Stream<String> lines = Files.lines(file.toPath())) {
-                    long count = lines.count();
-                    SshContext ctx = new SshContext();
-                    ctx.setBackground(true);
-                    ctx.getPostProcessorsList().add(new PostProcessorObject(SavePostProcessor.SAVE,
-                            Collections.singletonList(output.getAbsolutePath())));
-                    status = new ScriptStatus(executor().submit(() -> {
-                        SSH_THREAD_CONTEXT.set(ctx);
-                        try {
-                            run(file);
-                        } catch (IOException e) {
-                            LOGGER.warn("Unable to run script command : {}", e.getMessage(), e);
-                        }
-                    }), output, count, ctx);
-                    helper.print("Script from file starting un background. Please check results at " + output.getAbsolutePath() + ".");
-                    if (!notInteractive) {
-                        progress(status);
-                    }
-                }
-            }
-        } else if (action == ScriptAction.stop) {
-            if (status != null && !status.getFuture().isDone()) {
-                status.getFuture().cancel(true);
-            }
-            printStatus(status);
-        } else {
-            // script status
-            if (status != null && !status.getFuture().isDone()) {
-                progress(status);
-            } else {
-                printStatus(status);
+            @Option(shortName = 'f', longName = "file", required = true,
+                    description = "The absolute path to the script file to execute")
+            File file,
+            CommandContext commandContext
+    ) throws Exception {
+        if (file == null) {
+            throw new IllegalArgumentException("File is mandatory");
+        }
+        try (FileInputProvider inputProvider = new FileInputProvider(file)) {
+            String input;
+            while ((input = inputProvider.readInput()) != null) {
+                executeCommand(commandContext, input);
             }
         }
     }
 
-    private void printStatus(ScriptStatus status) {
-        if (status == null) {
-            helper.print("No script running in background.");
-        } else if (status.getFuture().isDone()) {
-            String doneOrCancelled = status.getFuture().isCancelled() ? "stopped" : "done";
-            helper.print("Script " + doneOrCancelled + ". " + status.getCount() + " commands executed.");
-        }
+    private void executeCommand(CommandContext commandContext, String input) throws Exception {
+        String[] commandTokens = input.split(" ");
+        NonInteractiveShellRunner shellRunner = new NonInteractiveShellRunner(this.commandParser, this.commandRegistry,
+                commandContext.outputWriter());
+        shellRunner.run(commandTokens);
     }
 
-    private void progress(ScriptStatus status) {
-        helper.interactive(Interactive.builder().input((StoppableInteractiveInput) (size, currentDelay) -> {
-            List<String> lines = new ArrayList<>();
-            lines.add("Script still running. " + status.getCount() + "/" + status.getTotal() + " " +
-                    "commands executed so far.");
-            lines.add(helper.progress((int) status.getCount(), (int) status.getTotal()));
-            lines.add(SshShellHelper.INTERACTIVE_LONG_MESSAGE + "\n");
-            return new InteractiveInputIO(status.getFuture().isDone() || status.getFuture().isCancelled(),
-                    lines.stream().map(AttributedString::new).collect(Collectors.toList()));
-
-        }).fullScreen(false).refreshDelay(1000).build());
-        if (status.getFuture().isDone() || status.getFuture().isCancelled()) {
-            helper.print("Script done. " + status.getCount() + " commands executed.");
-        }
-    }
-
-    private void run(File file) throws IOException {
-        Reader reader = new FileReader(file);
-        try (FileInputProvider inputProvider = new FileInputProvider(reader, parser)) {
-            ((ExtendedShell) getShell()).run(inputProvider, () -> status != null && status.getFuture().isCancelled());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private ExecutorService executor() {
-        if (executor == null) {
-            executor = Executors.newSingleThreadExecutor();
-        }
-        return executor;
-    }
-
-    /**
-     * Script action enum
-     */
-    public enum ScriptAction {
-        execute, stop, status
-    }
-
-    /**
-     * Script status POJO
-     */
-    @Data
-    @AllArgsConstructor
-    public static class ScriptStatus {
-
-        private Future<?> future;
-
-        private File result;
-
-        private long total;
-
-        private SshContext sshContext;
-
-        public long getCount() {
-            return sshContext.getBackgroundCount();
-        }
-    }
-
-    private Availability scriptAvailability() {
+    public Availability scriptAvailability() {
         return availability(GROUP, COMMAND_SCRIPT);
     }
 }

@@ -18,7 +18,7 @@ package com.github.choseongah.ssh.shell.commands;
 
 import com.github.choseongah.ssh.shell.PromptColor;
 import com.github.choseongah.ssh.shell.SshShellHelper;
-import org.springframework.shell.table.Aligner;
+import org.springframework.shell.jline.tui.table.Aligner;
 
 /**
  * Add this aligner to color cell

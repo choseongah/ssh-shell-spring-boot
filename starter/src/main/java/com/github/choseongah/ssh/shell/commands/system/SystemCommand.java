@@ -28,22 +28,36 @@ import org.jline.utils.AttributedString;
 import org.jline.utils.AttributedStringBuilder;
 import org.jline.utils.AttributedStyle;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.shell.Availability;
-import org.springframework.shell.standard.*;
-import org.springframework.shell.table.*;
+import org.springframework.shell.core.command.availability.Availability;
+import org.springframework.shell.core.command.annotation.Command;
+import org.springframework.shell.core.command.annotation.Option;
+import org.springframework.shell.jline.tui.table.ArrayTableModel;
+import org.springframework.shell.jline.tui.table.BorderStyle;
+import org.springframework.shell.jline.tui.table.SimpleHorizontalAligner;
+import org.springframework.shell.jline.tui.table.SimpleVerticalAligner;
+import org.springframework.shell.jline.tui.table.SizeConstraints;
+import org.springframework.shell.jline.tui.table.Table;
+import org.springframework.shell.jline.tui.table.TableBuilder;
+import org.springframework.shell.jline.tui.table.TableModel;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
-import static com.github.choseongah.ssh.shell.SshShellHelper.*;
+import static com.github.choseongah.ssh.shell.SshShellHelper.INTERACTIVE_LONG_MESSAGE;
+import static com.github.choseongah.ssh.shell.SshShellHelper.INTERACTIVE_SHORT_MESSAGE;
+import static com.github.choseongah.ssh.shell.SshShellHelper.at;
 
 /**
  * Jvm command
  */
-@SshShellComponent
-@ShellCommandGroup("System Commands")
+@SshShellComponent("sshSystemCommand")
 @ConditionalOnProperty(
         name = SshShellProperties.SSH_SHELL_PREFIX + ".commands." + SystemCommand.GROUP + ".create",
         havingValue = "true", matchIfMissing = true
@@ -54,6 +68,9 @@ public class SystemCommand extends AbstractCommand {
     private static final String COMMAND_SYSTEM_ENV = GROUP + "-env";
     private static final String COMMAND_SYSTEM_PROPERTIES = GROUP + "-properties";
     private static final String COMMAND_SYSTEM_THREADS = GROUP + "-threads";
+    public static final String ENV_AVAILABILITY_PROVIDER = "systemEnvAvailabilityProvider";
+    public static final String PROPERTIES_AVAILABILITY_PROVIDER = "systemPropertiesAvailabilityProvider";
+    public static final String THREADS_AVAILABILITY_PROVIDER = "systemThreadsAvailabilityProvider";
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("dd:MM:yyyy HH:mm:ss");
 
@@ -63,22 +80,24 @@ public class SystemCommand extends AbstractCommand {
         super(helper, properties, properties.getCommands().getSystem());
     }
 
-    @ShellMethod(key = COMMAND_SYSTEM_ENV, value = "List system environment.")
-    @ShellMethodAvailability("jvmEnvAvailability")
-    public Object jvmEnv(@ShellOption(help = "Simple view", defaultValue = "false") boolean simpleView) {
+    @Command(name = COMMAND_SYSTEM_ENV, group = "System Commands", description = "List system environment.",
+            availabilityProvider = ENV_AVAILABILITY_PROVIDER)
+    public Object jvmEnv(
+            @Option(longName = "simple-view", description = "Simple view", defaultValue = "false") boolean simpleView) {
         if (simpleView) {
             return buildSimple(System.getenv());
         }
         return buildTable(System.getenv()).render(helper.terminalSize().getRows());
     }
 
-    @ShellMethod(key = COMMAND_SYSTEM_PROPERTIES, value = "List system properties.")
-    @ShellMethodAvailability("jvmPropertiesAvailability")
-    public Object jvmProperties(@ShellOption(help = "Simple view", defaultValue = "false") boolean simpleView) {
+    @Command(name = COMMAND_SYSTEM_PROPERTIES, group = "System Commands", description = "List system properties.",
+            availabilityProvider = PROPERTIES_AVAILABILITY_PROVIDER)
+    public Object jvmProperties(
+            @Option(longName = "simple-view", description = "Simple view", defaultValue = "false") boolean simpleView) {
         Map<String, String> map =
                 System.getProperties().entrySet().stream().filter(e -> e.getKey() != null)
-                        .collect(Collectors.toMap(e -> e.getKey().toString(), e -> e.getValue() != null ?
-                                e.getValue().toString() : ""));
+                        .collect(Collectors.toMap(e -> e.getKey().toString(),
+                                e -> e.getValue() != null ? e.getValue().toString() : ""));
         if (simpleView) {
             return buildSimple(map);
         }
@@ -143,13 +162,21 @@ public class SystemCommand extends AbstractCommand {
         return new SizeConstraints.Extent(min, max);
     }
 
-    @ShellMethod(key = COMMAND_SYSTEM_THREADS, value = "List jvm threads.")
-    @ShellMethodAvailability("threadsAvailability")
-    public String threads(@ShellOption(help = "'list' or 'dump' threads. Default is: list", defaultValue = "list", valueProvider = EnumValueProvider.class) ThreadAction action,
-                          @ShellOption(help = "Order by column. Default is: id", defaultValue = "id", valueProvider = EnumValueProvider.class) ThreadColumn orderBy,
-                          @ShellOption(help = "Reverse order by column. Default is: false", defaultValue = "false") boolean reverseOrder,
-                          @ShellOption(help = "Not interactive. Default is: false", defaultValue = "false") boolean staticDisplay,
-                          @ShellOption(help = "Only for DUMP action", defaultValue = ShellOption.NULL) Long threadId) {
+    @Command(name = COMMAND_SYSTEM_THREADS, group = "System Commands", description = "List jvm threads.",
+            availabilityProvider = THREADS_AVAILABILITY_PROVIDER)
+    public String threads(
+            @Option(longName = "action",
+                    description = "'list' or 'dump' threads. Default is: list", defaultValue = "list")
+            ThreadAction action,
+            @Option(longName = "order-by", description = "Order by column. Default is: id", defaultValue = "id")
+            ThreadColumn orderBy,
+            @Option(longName = "reverse-order",
+                    description = "Reverse order by column. Default is: false", defaultValue = "false")
+            boolean reverseOrder,
+            @Option(longName = "static-display",
+                    description = "Not interactive. Default is: false", defaultValue = "false")
+            boolean staticDisplay,
+            @Option(longName = "thread-id", description = "Only for DUMP action", defaultValue = "") Long threadId) {
 
         if (action == ThreadAction.dump) {
             Thread th = get(threadId);
@@ -199,8 +226,8 @@ public class SystemCommand extends AbstractCommand {
             }
 
             lines.add(AttributedString.fromAnsi("Press 'r' to reverse order, first column letter to change order by"));
-            String msg = INTERACTIVE_LONG_MESSAGE.length() <= helper.terminalSize().getColumns() ?
-                    INTERACTIVE_LONG_MESSAGE : INTERACTIVE_SHORT_MESSAGE;
+            String msg = INTERACTIVE_LONG_MESSAGE.length() <= helper.terminalSize().getColumns()
+                    ? INTERACTIVE_LONG_MESSAGE : INTERACTIVE_SHORT_MESSAGE;
             lines.add(AttributedString.fromAnsi(msg));
 
             return lines;
@@ -247,7 +274,6 @@ public class SystemCommand extends AbstractCommand {
         List<Thread> ordered = new ArrayList<>(getThreads().values());
         ordered.sort(comparator(orderBy, reverseOrder));
 
-        // handle maximum rows: 1 line for headers, 3 borders, 3 description lines
         int maxWithHeadersAndBorders = helper.terminalSize().getRows() - 8;
         int tableSize = ordered.size() + 1;
         boolean addDotLine = false;
@@ -286,7 +312,8 @@ public class SystemCommand extends AbstractCommand {
             data[r][4] = dots;
             data[r][5] = "... not enough rows to display all threads";
         }
-        return tableBuilder.addHeaderAndVerticalsBorders(BorderStyle.fancy_double).build().render(helper.terminalSize().getRows());
+        return tableBuilder.addHeaderAndVerticalsBorders(BorderStyle.fancy_double).build()
+                .render(helper.terminalSize().getRows());
     }
 
     private static Map<Long, Thread> getThreads() {
@@ -313,7 +340,7 @@ public class SystemCommand extends AbstractCommand {
         return group;
     }
 
-    private Availability threadsAvailability() {
+    public Availability threadsAvailability() {
         return availability(GROUP, COMMAND_SYSTEM_THREADS);
     }
 
@@ -325,11 +352,11 @@ public class SystemCommand extends AbstractCommand {
         list, dump
     }
 
-    private Availability jvmEnvAvailability() {
+    public Availability jvmEnvAvailability() {
         return availability(GROUP, COMMAND_SYSTEM_ENV);
     }
 
-    private Availability jvmPropertiesAvailability() {
+    public Availability jvmPropertiesAvailability() {
         return availability(GROUP, COMMAND_SYSTEM_PROPERTIES);
     }
 }

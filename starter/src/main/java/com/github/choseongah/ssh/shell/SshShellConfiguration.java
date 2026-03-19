@@ -17,6 +17,7 @@
 package com.github.choseongah.ssh.shell;
 
 import com.github.choseongah.ssh.shell.auth.SshShellPublicKeyAuthenticationProvider;
+import com.github.choseongah.ssh.shell.listeners.SshShellListenerService;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,12 +26,18 @@ import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.auth.pubkey.RejectAllPublickeyAuthenticator;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
+import org.jline.reader.LineReader;
+import org.springframework.boot.Banner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.core.io.Resource;
+import org.springframework.shell.core.command.CommandParser;
+import org.springframework.shell.core.command.CommandRegistry;
+import org.springframework.shell.jline.PromptProvider;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -48,9 +55,33 @@ public class SshShellConfiguration {
 
     private final SshShellProperties properties;
 
-    private final SshShellCommandFactory shellCommandFactory;
-
     private final PasswordAuthenticator passwordAuthenticator;
+
+    /**
+     * Creates the ssh shell factory used as shell and command factory by sshd
+     *
+     * @param shellListenerService ssh shell listener service
+     * @param shellBanner          optional spring banner
+     * @param environment          spring environment
+     * @param commandRegistry      spring shell command registry
+     * @param commandParser        spring shell command parser
+     * @param lineReader           default line reader
+     * @param promptProvider       prompt provider
+     * @param postProcessorService ssh post processor service
+     * @return ssh shell command factory
+     */
+    @Bean
+    public SshShellCommandFactory sshShellCommandFactory(SshShellListenerService shellListenerService,
+                                                         java.util.Optional<Banner> shellBanner,
+                                                         Environment environment,
+                                                         CommandRegistry commandRegistry,
+                                                         CommandParser commandParser,
+                                                         LineReader lineReader,
+                                                         PromptProvider promptProvider,
+                                                         SshPostProcessorService postProcessorService) {
+        return new SshShellCommandFactory(properties, shellListenerService, shellBanner, environment, commandRegistry,
+                commandParser, lineReader, promptProvider, postProcessorService);
+    }
 
     /**
      * Create the bean responsible for starting and stopping the SSH server
@@ -69,7 +100,7 @@ public class SshShellConfiguration {
      * @return ssh server
      */
     @Bean
-    public SshServer sshServer() throws IOException {
+    public SshServer sshServer(SshShellCommandFactory shellCommandFactory) throws IOException {
         SshServer server = SshServer.setUpDefaultServer();
         server.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(properties.getHostKeyFile().toPath()));
         server.setHost(properties.getHost());

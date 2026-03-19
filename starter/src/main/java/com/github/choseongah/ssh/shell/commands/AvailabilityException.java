@@ -21,8 +21,7 @@ import java.io.Serial;
 /**
  * Availability
  */
-public class AvailabilityException
-        extends Exception {
+public class AvailabilityException extends Exception {
 
     @Serial
     private static final long serialVersionUID = -8323343028474225670L;

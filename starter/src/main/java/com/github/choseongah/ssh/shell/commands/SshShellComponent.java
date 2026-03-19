@@ -17,19 +17,24 @@
 package com.github.choseongah.ssh.shell.commands;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.shell.standard.ShellComponent;
+import org.springframework.core.annotation.AliasFor;
+import org.springframework.stereotype.Component;
 
-import java.lang.annotation.*;
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 import static com.github.choseongah.ssh.shell.SshShellProperties.SSH_SHELL_ENABLE;
 
 /**
- * Conditional {@link org.springframework.shell.standard.ShellComponent}
+ * Conditional {@link Component}
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 @Documented
-@ShellComponent
+@Component
 @ConditionalOnProperty(name = SSH_SHELL_ENABLE, havingValue = "true", matchIfMissing = true)
 public @interface SshShellComponent {
 
@@ -38,5 +43,6 @@ public @interface SshShellComponent {
      *
      * @return the suggested component name, if any
      */
+    @AliasFor(annotation = Component.class, attribute = "value")
     String value() default "";
 }

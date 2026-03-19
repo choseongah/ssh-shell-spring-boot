@@ -16,55 +16,52 @@
 
 package com.github.choseongah.ssh.shell.commands;
 
+import com.github.choseongah.ssh.shell.SshShellCommandFactory;
 import com.github.choseongah.ssh.shell.SshShellHelper;
 import com.github.choseongah.ssh.shell.SshShellProperties;
-import com.github.choseongah.ssh.shell.postprocess.ExtendedResultHandlerService;
-import org.jline.terminal.Terminal;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.shell.Availability;
-import org.springframework.shell.standard.ShellCommandGroup;
-import org.springframework.shell.standard.ShellMethod;
-import org.springframework.shell.standard.ShellMethodAvailability;
-import org.springframework.shell.standard.commands.Stacktrace;
+import org.springframework.shell.core.command.availability.Availability;
+import org.springframework.shell.core.command.annotation.Command;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
 
 /**
  * Override stacktrace command to get error per thread
  */
-@SshShellComponent
-@ShellCommandGroup("Built-In Commands")
+@SshShellComponent("sshStacktraceCommand")
 @ConditionalOnProperty(
         name = SshShellProperties.SSH_SHELL_PREFIX + ".commands." + StacktraceCommand.GROUP + ".create",
         havingValue = "true", matchIfMissing = true
 )
-public class StacktraceCommand extends AbstractCommand implements Stacktrace.Command {
+public class StacktraceCommand extends AbstractCommand {
 
     public static final String GROUP = "stacktrace";
     public static final String COMMAND_STACKTRACE = GROUP;
-
-    private Terminal terminal;
+    public static final String AVAILABILITY_PROVIDER = "stacktraceAvailabilityProvider";
 
     public StacktraceCommand(SshShellHelper helper, SshShellProperties properties) {
         super(helper, properties, properties.getCommands().getStacktrace());
     }
 
-    @ShellMethod(key = COMMAND_STACKTRACE, value = "Display the full stacktrace of the last error.")
-    @ShellMethodAvailability("stacktraceAvailability")
-    public void stacktrace() {
-        Throwable lastError = ExtendedResultHandlerService.THREAD_CONTEXT.get();
-        if (lastError != null) {
-            lastError.printStackTrace(this.terminal.writer());
+    @Command(name = COMMAND_STACKTRACE, group = "Built-In Commands",
+            description = "Display the full stacktrace of the last error.",
+            availabilityProvider = AVAILABILITY_PROVIDER)
+    public String stacktrace() {
+        Throwable lastError = SshShellCommandFactory.SSH_THREAD_CONTEXT.get() != null
+                ? SshShellCommandFactory.SSH_THREAD_CONTEXT.get().getLastError()
+                : null;
+        if (lastError == null) {
+            return "";
         }
+        StringWriter stringWriter = new StringWriter();
+        PrintWriter printWriter = new PrintWriter(stringWriter);
+        lastError.printStackTrace(printWriter);
+        printWriter.flush();
+        return stringWriter.toString();
     }
 
-    @Autowired
-    @Lazy
-    public void setTerminal(Terminal terminal) {
-        this.terminal = terminal;
-    }
-
-    private Availability stacktraceAvailability() {
+    public Availability stacktraceAvailability() {
         return availability(GROUP, COMMAND_STACKTRACE);
     }
 }

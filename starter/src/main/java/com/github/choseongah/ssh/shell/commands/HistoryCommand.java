@@ -18,49 +18,53 @@ package com.github.choseongah.ssh.shell.commands;
 
 import com.github.choseongah.ssh.shell.SshShellHelper;
 import com.github.choseongah.ssh.shell.SshShellProperties;
-import com.github.choseongah.ssh.shell.providers.ExtendedFileValueProvider;
-import lombok.extern.slf4j.Slf4j;
+import org.jline.reader.History;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.shell.Availability;
-import org.springframework.shell.standard.ShellCommandGroup;
-import org.springframework.shell.standard.ShellMethod;
-import org.springframework.shell.standard.ShellMethodAvailability;
-import org.springframework.shell.standard.ShellOption;
-import org.springframework.shell.standard.commands.History;
+import org.springframework.shell.core.command.availability.Availability;
+import org.springframework.shell.core.command.annotation.Command;
+import org.springframework.shell.core.command.annotation.Option;
 import org.springframework.util.CollectionUtils;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.List;
 
 /**
  * Override history command to get history per user if not shared
  */
-@Slf4j
-@SshShellComponent
-@ShellCommandGroup("Built-In Commands")
+@SshShellComponent("sshHistoryCommand")
 @ConditionalOnProperty(
         name = SshShellProperties.SSH_SHELL_PREFIX + ".commands." + HistoryCommand.GROUP + ".create",
         havingValue = "true", matchIfMissing = true
 )
-public class HistoryCommand extends AbstractCommand implements History.Command {
+public class HistoryCommand extends AbstractCommand {
 
     public static final String GROUP = "history";
     public static final String COMMAND_HISTORY = GROUP;
+    public static final String AVAILABILITY_PROVIDER = "historyAvailabilityProvider";
+    public static final String COMPLETION_PROVIDER = "historyCompletionProvider";
 
     public HistoryCommand(SshShellProperties properties, SshShellHelper helper) {
         super(helper, properties, properties.getCommands().getHistory());
     }
 
-    @ShellMethod(key = COMMAND_HISTORY, value = "Display or save the history of previously run commands")
-    @ShellMethodAvailability("historyAvailability")
+    @Command(name = COMMAND_HISTORY, group = "Built-In Commands",
+            description = "Display or save the history of previously run commands",
+            availabilityProvider = AVAILABILITY_PROVIDER, completionProvider = COMPLETION_PROVIDER)
     public Object history(
-            @ShellOption(help = "A file to save history to.", defaultValue = ShellOption.NULL, valueProvider = ExtendedFileValueProvider.class) File file,
-            @ShellOption(help = "To display standard spring shell way (array.tostring). Default value: false", defaultValue = "false") boolean displayArray
+            @Option(longName = "file", description = "A file to save history to.", defaultValue = "") File file,
+            @Option(longName = "display-array",
+                    description = "To display standard spring shell way (array.tostring). Default value: false",
+                    defaultValue = "false") boolean displayArray
     ) throws IOException {
-        List<String> result = new History(helper.getHistory()).history(file);
-        if (file != null && result.size() == 1) {
-            return result.get(0);
+        List<String> result = new java.util.ArrayList<>();
+        for (History.Entry entry : helper.getHistory()) {
+            result.add(entry.line());
+        }
+        if (file != null) {
+            Files.write(file.toPath(), result);
+            return file.getAbsolutePath();
         } else if (displayArray) {
             return result;
         }
@@ -71,8 +75,7 @@ public class HistoryCommand extends AbstractCommand implements History.Command {
         return sb.toString();
     }
 
-    private Availability historyAvailability() {
+    public Availability historyAvailability() {
         return availability(GROUP, COMMAND_HISTORY);
     }
-
 }

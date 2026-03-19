@@ -21,8 +21,7 @@ import com.github.choseongah.ssh.shell.SshShellHelper;
 import com.github.choseongah.ssh.shell.SshShellProperties;
 import com.github.choseongah.ssh.shell.auth.SshAuthentication;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.shell.Availability;
-import org.springframework.shell.standard.AbstractShellComponent;
+import org.springframework.shell.core.command.availability.Availability;
 
 import java.util.List;
 
@@ -30,7 +29,7 @@ import java.util.List;
  * Abstract command with availability
  */
 @Slf4j
-public class AbstractCommand extends AbstractShellComponent {
+public class AbstractCommand {
 
     protected final SshShellHelper helper;
 
@@ -55,16 +54,16 @@ public class AbstractCommand extends AbstractShellComponent {
         try {
             preAvailability();
             if (!commandProperties.isEnable()) {
-                return Availability.unavailable("command deactivated (please check property '" +
-                        SshShellProperties.SSH_SHELL_PREFIX + ".commands." + commandGroup + ".enable" + "')");
+                return Availability.unavailable("command deactivated (please check property '"
+                        + SshShellProperties.SSH_SHELL_PREFIX + ".commands." + commandGroup + ".enable" + "')");
             }
             if (commandProperties.getExcludes() != null && commandProperties.getExcludes().contains(commandName)) {
-                return Availability.unavailable("command is excluded (please check property '" +
-                        SshShellProperties.SSH_SHELL_PREFIX + ".commands." + commandGroup + ".excludes" + "')");
+                return Availability.unavailable("command is excluded (please check property '"
+                        + SshShellProperties.SSH_SHELL_PREFIX + ".commands." + commandGroup + ".excludes" + "')");
             }
             if (commandProperties.getIncludes() != null && !commandProperties.getIncludes().contains(commandName)) {
-                return Availability.unavailable("command not included (please check property '" +
-                        SshShellProperties.SSH_SHELL_PREFIX + ".commands." + commandGroup + ".includes" + "')");
+                return Availability.unavailable("command not included (please check property '"
+                        + SshShellProperties.SSH_SHELL_PREFIX + ".commands." + commandGroup + ".includes" + "')");
             }
             if (helper.isLocalPrompt()) {
                 LOGGER.debug("Not an ssh session -> local prompt -> giving all rights");
@@ -91,7 +90,6 @@ public class AbstractCommand extends AbstractShellComponent {
     protected void preAvailability() throws AvailabilityException {
         // nothing by default
     }
-
 
     /**
      * Extends this to add behavior after the one in abstract

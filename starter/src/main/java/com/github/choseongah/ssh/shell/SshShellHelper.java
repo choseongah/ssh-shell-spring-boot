@@ -23,7 +23,6 @@ import com.github.choseongah.ssh.shell.interactive.InteractiveInputIO;
 import com.github.choseongah.ssh.shell.interactive.KeyBinding;
 import com.github.choseongah.ssh.shell.interactive.KeyBindingInput;
 import com.github.choseongah.ssh.shell.interactive.StoppableInteractiveInput;
-import com.github.choseongah.ssh.shell.interactive.*;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.sshd.server.Environment;
@@ -32,7 +31,6 @@ import org.jline.keymap.BindingReader;
 import org.jline.keymap.KeyMap;
 import org.jline.reader.History;
 import org.jline.reader.LineReader;
-import org.jline.reader.impl.history.DefaultHistory;
 import org.jline.terminal.Attributes;
 import org.jline.terminal.Size;
 import org.jline.terminal.Terminal;
@@ -40,7 +38,15 @@ import org.jline.terminal.impl.AbstractPosixTerminal;
 import org.jline.utils.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.shell.table.*;
+import org.springframework.shell.jline.tui.table.Aligner;
+import org.springframework.shell.jline.tui.table.ArrayTableModel;
+import org.springframework.shell.jline.tui.table.BorderStyle;
+import org.springframework.shell.jline.tui.table.CellMatcher;
+import org.springframework.shell.jline.tui.table.SimpleHorizontalAligner;
+import org.springframework.shell.jline.tui.table.SimpleVerticalAligner;
+import org.springframework.shell.jline.tui.table.Table;
+import org.springframework.shell.jline.tui.table.TableBuilder;
+import org.springframework.shell.jline.tui.table.TableModel;
 
 import java.io.PrintWriter;
 import java.util.*;
@@ -393,7 +399,8 @@ public class SshShellHelper {
      * @return authentication from spring authentication, or null of not found in context
      */
     public SshAuthentication getAuthentication() {
-        return SshShellCommandFactory.SSH_THREAD_CONTEXT.get().getAuthentication();
+        SshContext sshContext = SshShellCommandFactory.SSH_THREAD_CONTEXT.get();
+        return sshContext != null ? sshContext.getAuthentication() : null;
     }
 
     /**
@@ -402,7 +409,8 @@ public class SshShellHelper {
      * @return current ssh session, or null if local prompt
      */
     public ServerSession getSshSession() {
-        return SshShellCommandFactory.SSH_THREAD_CONTEXT.get().getSshSession();
+        SshContext sshContext = SshShellCommandFactory.SSH_THREAD_CONTEXT.get();
+        return sshContext != null ? sshContext.getSshSession() : null;
     }
 
     /**
@@ -411,7 +419,8 @@ public class SshShellHelper {
      * @return current ssh environment, or null if local prompt
      */
     public Environment getSshEnvironment() {
-        return SshShellCommandFactory.SSH_THREAD_CONTEXT.get().getSshEnv();
+        SshContext sshContext = SshShellCommandFactory.SSH_THREAD_CONTEXT.get();
+        return sshContext != null ? sshContext.getSshEnv() : null;
     }
 
     /**
@@ -540,7 +549,11 @@ public class SshShellHelper {
      * @return history
      */
     public History getHistory() {
-        return new DefaultHistory(this.reader());
+        SshContext sshContext = SshShellCommandFactory.SSH_THREAD_CONTEXT.get();
+        if (sshContext != null && sshContext.getHistory() != null) {
+            return sshContext.getHistory();
+        }
+        return this.reader().getHistory();
     }
 
     /**

@@ -16,13 +16,13 @@
 
 package com.github.choseongah.ssh.shell.postprocess.provided;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import com.github.choseongah.ssh.shell.postprocess.PostProcessor;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.IOException;
 import java.util.List;
 
 /**
@@ -65,7 +65,7 @@ public class JsonPointerPostProcessor
                         return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(node);
                     }
                 }
-            } catch (IOException e) {
+            } catch (JacksonException e) {
                 LOGGER.warn("Unable to read tree", e);
             } catch (IllegalArgumentException e) {
                 LOGGER.warn("Illegal argument: " + path, e);

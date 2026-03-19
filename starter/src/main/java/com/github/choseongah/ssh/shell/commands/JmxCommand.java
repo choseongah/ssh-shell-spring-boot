@@ -19,24 +19,34 @@ package com.github.choseongah.ssh.shell.commands;
 import com.github.choseongah.ssh.shell.SimpleTable;
 import com.github.choseongah.ssh.shell.SshShellHelper;
 import com.github.choseongah.ssh.shell.SshShellProperties;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.shell.Availability;
-import org.springframework.shell.CompletionContext;
-import org.springframework.shell.CompletionProposal;
-import org.springframework.shell.standard.*;
-import org.springframework.stereotype.Component;
+import org.springframework.shell.core.command.availability.Availability;
+import org.springframework.shell.core.command.annotation.Command;
+import org.springframework.shell.core.command.annotation.Option;
 
-import javax.management.*;
+import javax.management.InstanceNotFoundException;
+import javax.management.JMException;
+import javax.management.MBeanAttributeInfo;
+import javax.management.MBeanFeatureInfo;
+import javax.management.MBeanInfo;
+import javax.management.MBeanOperationInfo;
+import javax.management.MBeanParameterInfo;
+import javax.management.MBeanServer;
+import javax.management.MalformedObjectNameException;
+import javax.management.ObjectInstance;
+import javax.management.ObjectName;
 import java.lang.management.ManagementFactory;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
  * JMX command
  */
-@SshShellComponent
-@ShellCommandGroup("Jmx Commands")
+@SshShellComponent("sshJmxCommand")
 @ConditionalOnProperty(
         name = SshShellProperties.SSH_SHELL_PREFIX + ".commands." + JmxCommand.GROUP + ".create",
         havingValue = "true", matchIfMissing = true
@@ -47,6 +57,10 @@ public class JmxCommand extends AbstractCommand {
     private static final String COMMAND_JMX_LIST = GROUP + "-list";
     private static final String COMMAND_JMX_INFO = GROUP + "-info";
     private static final String COMMAND_JMX_INVOKE = GROUP + "-invoke";
+    public static final String LIST_AVAILABILITY_PROVIDER = "jmxListAvailabilityProvider";
+    public static final String INFO_AVAILABILITY_PROVIDER = "jmxInfoAvailabilityProvider";
+    public static final String INVOKE_AVAILABILITY_PROVIDER = "jmxInvokeAvailabilityProvider";
+    public static final String OBJECT_NAME_COMPLETION_PROVIDER = "jmxObjectNameCompletionProvider";
 
     private static final String OBJECT_NAME_EXAMPLE = "org.springframework.boot:type=Endpoint,name=Info";
 
@@ -59,25 +73,29 @@ public class JmxCommand extends AbstractCommand {
      *
      * @param pattern (optional) allows you to narrow search
      */
-    @ShellMethod(key = COMMAND_JMX_LIST, value = "List jmx mbeans.")
-    @ShellMethodAvailability("jmxListAvailability")
+    @Command(name = COMMAND_JMX_LIST, group = "Jmx Commands", description = "List jmx mbeans.",
+            availabilityProvider = LIST_AVAILABILITY_PROVIDER)
     public void jmxList(
-            @ShellOption(help = "Pattern to search for (ex: org.springframework.boot:*, org.springframework.boot:type=Endpoint,name=*, " + OBJECT_NAME_EXAMPLE + ")",
-                    defaultValue = ShellOption.NULL) String pattern
+            @Option(longName = "pattern",
+                    description = "Pattern to search for (ex: org.springframework.boot:*, "
+                            + "org.springframework.boot:type=Endpoint,name=*, " + OBJECT_NAME_EXAMPLE + ")",
+                    defaultValue = "")
+            String pattern
     ) {
         MBeanServer server = ManagementFactory.getPlatformMBeanServer();
         try {
-            ObjectName patternName = pattern != null ? ObjectName.getInstance(pattern) : null;
+            ObjectName patternName = pattern != null && !pattern.isBlank() ? ObjectName.getInstance(pattern) : null;
             SimpleTable.SimpleTableBuilder builder = SimpleTable.builder().column("Object name").column("Class name");
             Set<ObjectInstance> result = server.queryMBeans(patternName, null);
-            for (ObjectInstance objectInstance :
-                    result.stream().sorted(Comparator.comparing(ObjectInstance::getObjectName)).toList()) {
+            for (ObjectInstance objectInstance : result.stream()
+                    .sorted(Comparator.comparing(ObjectInstance::getObjectName)).toList()) {
                 builder.line(Arrays.asList(objectInstance.getObjectName().toString(), objectInstance.getClassName()));
             }
             helper.print(helper.renderTable(builder.build()));
             helper.print("\nNote: mBean count : " + server.getMBeanCount());
         } catch (MalformedObjectNameException e) {
-            helper.printError("Pattern [" + pattern + "] is not in expected format (expected example : " + OBJECT_NAME_EXAMPLE + "). " + e.getMessage());
+            helper.printError("Pattern [" + pattern + "] is not in expected format (expected example : "
+                    + OBJECT_NAME_EXAMPLE + "). " + e.getMessage());
         }
     }
 
@@ -88,12 +106,15 @@ public class JmxCommand extends AbstractCommand {
      * @param allAttributesValues set to true to displays attributes values, false by default
      * @throws JMException if error occurs with jmx server
      */
-    @ShellMethod(key = COMMAND_JMX_INFO, value = "Displays information about jmx mbean. Use -a option to query " +
-            "attribute values.")
-    @ShellMethodAvailability("jmxInfoAvailability")
+    @Command(name = COMMAND_JMX_INFO, group = "Jmx Commands",
+            description = "Displays information about jmx mbean. Use -a option to query attribute values.",
+            availabilityProvider = INFO_AVAILABILITY_PROVIDER, completionProvider = OBJECT_NAME_COMPLETION_PROVIDER)
     public void jmxInfo(
-            @ShellOption(help = "Object name (ex: " + OBJECT_NAME_EXAMPLE + ")", valueProvider = ObjectNameValuesProvider.class) String objectName,
-            @ShellOption(help = "Get all attributes", defaultValue = "false") boolean allAttributesValues
+            @Option(longName = "object-name",
+                    description = "Object name (ex: " + OBJECT_NAME_EXAMPLE + ")", required = true)
+            String objectName,
+            @Option(longName = "all-attributes-values", description = "Get all attributes", defaultValue = "false")
+            boolean allAttributesValues
     ) throws JMException {
         try {
             MBeanServer server = ManagementFactory.getPlatformMBeanServer();
@@ -135,24 +156,24 @@ public class JmxCommand extends AbstractCommand {
                 }
                 sb.append("Attributes  : ").append("\n").append(helper.renderTable(builder.build()));
             }
-            builder = SimpleTable.builder().column("Name").column("Description").column("Impact").column("Return " +
-                    "type").column("Parameters");
+            builder = SimpleTable.builder().column("Name").column("Description").column("Impact")
+                    .column("Return type").column("Parameters");
             if (info.getOperations().length > 0) {
                 for (MBeanOperationInfo operation : info.getOperations()) {
-                    builder.line(Arrays
-                            .asList(operation.getName(), operation.getDescription(), impact(operation.getImpact()),
-                                    operation.getReturnType(),
-                                    Arrays.stream(operation.getSignature()).map(p -> p.getName() + ":" + p.getType()).collect(Collectors.toList())));
+                    builder.line(Arrays.asList(operation.getName(), operation.getDescription(),
+                            impact(operation.getImpact()), operation.getReturnType(),
+                            Arrays.stream(operation.getSignature())
+                                    .map(p -> p.getName() + ":" + p.getType()).collect(Collectors.toList())));
                 }
                 sb.append("Operations  : ").append("\n").append(helper.renderTable(builder.build()));
             }
             helper.print(sb.toString());
         } catch (MalformedObjectNameException e) {
-            helper.printError(
-                    "Object name [" + objectName + "] is not in expected format (expected example : " + OBJECT_NAME_EXAMPLE + "). " + e.getMessage());
+            helper.printError("Object name [" + objectName + "] is not in expected format (expected example : "
+                    + OBJECT_NAME_EXAMPLE + "). " + e.getMessage());
         } catch (InstanceNotFoundException e) {
-            helper.printWarning("Instance not found for name [" + objectName + "]. Check available object names with " +
-                    "command jmx-list");
+            helper.printWarning("Instance not found for name [" + objectName + "]. Check available object names with "
+                    + "command jmx-list");
         }
     }
 
@@ -165,12 +186,17 @@ public class JmxCommand extends AbstractCommand {
      * @return result of invocation, or null if operation is void type
      * @throws JMException if error occurs with jmx server
      */
-    @ShellMethod(key = COMMAND_JMX_INVOKE, value = "Invoke operation on object name.")
-    @ShellMethodAvailability("jmxInvokeAvailability")
+    @Command(name = COMMAND_JMX_INVOKE, group = "Jmx Commands",
+            description = "Invoke operation on object name.", availabilityProvider = INVOKE_AVAILABILITY_PROVIDER,
+            completionProvider = OBJECT_NAME_COMPLETION_PROVIDER)
     public Object jmxInvoke(
-            @ShellOption(help = "Object name (ex: " + OBJECT_NAME_EXAMPLE + ")", valueProvider = ObjectNameValuesProvider.class) String objectName,
-            @ShellOption(help = "Operation name (ex: info, for spring boot info mbean)") String operationName,
-            @ShellOption(help = "Parameters", defaultValue = ShellOption.NULL) String parameters
+            @Option(longName = "object-name",
+                    description = "Object name (ex: " + OBJECT_NAME_EXAMPLE + ")", required = true)
+            String objectName,
+            @Option(longName = "operation-name",
+                    description = "Operation name (ex: info, for spring boot info mbean)", required = true)
+            String operationName,
+            @Option(longName = "parameters", description = "Parameters", defaultValue = "") String parameters
     ) throws JMException {
         try {
             MBeanServer server = ManagementFactory.getPlatformMBeanServer();
@@ -183,25 +209,28 @@ public class JmxCommand extends AbstractCommand {
                 }
             }
             if (operation == null) {
-                helper.printError("Object name [" + objectName + "] does not have operation with name [" + operationName + "]. Available are : " + Arrays
-                        .stream(info.getOperations()).map(MBeanFeatureInfo::getName).collect(Collectors.joining()));
+                helper.printError("Object name [" + objectName + "] does not have operation with name ["
+                        + operationName + "]. Available are : " + Arrays.stream(info.getOperations())
+                        .map(MBeanFeatureInfo::getName).collect(Collectors.joining()));
             } else {
-                Object[] parsedParameters = parameters != null ? parameters.split(",") : new Object[0];
-                String[] signature = parameters != null ?
-                        Arrays.stream(operation.getSignature()).map(MBeanParameterInfo::getType).toArray(String[]::new) : new String[0];
+                Object[] parsedParameters = parameters != null && !parameters.isBlank()
+                        ? parameters.split(",") : new Object[0];
+                String[] signature = parameters != null && !parameters.isBlank()
+                        ? Arrays.stream(operation.getSignature()).map(MBeanParameterInfo::getType)
+                        .toArray(String[]::new) : new String[0];
                 Object result = server.invoke(objectNameBean, operationName, parsedParameters, signature);
-                helper.printSuccess("Operation [" + operationName + "] invoked on mbean [" + objectName + "] " +
-                        "successfully");
+                helper.printSuccess("Operation [" + operationName + "] invoked on mbean [" + objectName + "] "
+                        + "successfully");
                 if (result != null) {
                     return result;
                 }
             }
         } catch (MalformedObjectNameException e) {
-            helper.printError(
-                    "Object name [" + objectName + "] is not in expected format (expected example : " + OBJECT_NAME_EXAMPLE + "). " + e.getMessage());
+            helper.printError("Object name [" + objectName + "] is not in expected format (expected example : "
+                    + OBJECT_NAME_EXAMPLE + "). " + e.getMessage());
         } catch (InstanceNotFoundException e) {
-            helper.printWarning("Instance not found for name [" + objectName + "]. Check available object names with " +
-                    "command jmx-list");
+            helper.printWarning("Instance not found for name [" + objectName + "]. Check available object names with "
+                    + "command jmx-list");
         }
         return null;
     }
@@ -216,31 +245,26 @@ public class JmxCommand extends AbstractCommand {
         };
     }
 
-    private Availability jmxListAvailability() {
+    public List<String> getObjectNames() {
+        try {
+            return ManagementFactory.getPlatformMBeanServer().queryMBeans(null, null).stream()
+                    .map(o -> o.getObjectName().toString())
+                    .sorted()
+                    .toList();
+        } catch (Exception e) {
+            return List.of();
+        }
+    }
+
+    public Availability jmxListAvailability() {
         return availability(GROUP, COMMAND_JMX_LIST);
     }
 
-    private Availability jmxInfoAvailability() {
+    public Availability jmxInfoAvailability() {
         return availability(GROUP, COMMAND_JMX_INFO);
     }
 
-    private Availability jmxInvokeAvailability() {
+    public Availability jmxInvokeAvailability() {
         return availability(GROUP, COMMAND_JMX_INVOKE);
-    }
-}
-
-@Slf4j
-@Component
-class ObjectNameValuesProvider implements ValueProvider {
-
-    @Override
-    public List<CompletionProposal> complete(CompletionContext completionContext) {
-        try {
-            return ManagementFactory.getPlatformMBeanServer().queryMBeans(null, null).stream()
-                    .map(o -> new CompletionProposal(o.getObjectName().toString())).collect(Collectors.toList());
-        } catch (Exception e) {
-            LOGGER.debug("Unable to provide completion for jmx object names", e);
-            return Collections.emptyList();
-        }
     }
 }

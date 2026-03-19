@@ -20,8 +20,6 @@ import com.github.choseongah.ssh.shell.SshShellHelper;
 import com.github.choseongah.ssh.shell.SshShellProperties;
 import com.github.choseongah.ssh.shell.commands.AbstractCommand;
 import com.github.choseongah.ssh.shell.commands.SshShellComponent;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.boot.actuate.audit.AuditEventsEndpoint;
 import org.springframework.boot.actuate.autoconfigure.condition.ConditionsReportEndpoint;
@@ -30,34 +28,33 @@ import org.springframework.boot.actuate.context.ShutdownEndpoint;
 import org.springframework.boot.actuate.context.properties.ConfigurationPropertiesReportEndpoint;
 import org.springframework.boot.actuate.endpoint.annotation.Endpoint;
 import org.springframework.boot.actuate.env.EnvironmentEndpoint;
-import org.springframework.boot.actuate.health.HealthEndpoint;
 import org.springframework.boot.actuate.info.InfoEndpoint;
 import org.springframework.boot.actuate.logging.LoggersEndpoint;
 import org.springframework.boot.actuate.management.ThreadDumpEndpoint;
-import org.springframework.boot.actuate.metrics.MetricsEndpoint;
 import org.springframework.boot.actuate.scheduling.ScheduledTasksEndpoint;
-import org.springframework.boot.actuate.session.SessionsEndpoint;
 import org.springframework.boot.actuate.web.exchanges.HttpExchangesEndpoint;
 import org.springframework.boot.actuate.web.mappings.MappingsEndpoint;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.logging.LogLevel;
+import org.springframework.boot.health.actuate.endpoint.HealthEndpoint;
+import org.springframework.boot.micrometer.metrics.actuate.endpoint.MetricsEndpoint;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.core.env.Environment;
-import org.springframework.shell.Availability;
-import org.springframework.shell.standard.*;
+import org.springframework.shell.core.command.availability.Availability;
+import org.springframework.shell.core.command.annotation.Command;
+import org.springframework.shell.core.command.annotation.Option;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 /**
  * Actuator shell command
  */
-@SshShellComponent
-@ShellCommandGroup("Actuator Commands")
+@SshShellComponent("sshActuatorCommand")
 @ConditionalOnClass(Endpoint.class)
 @ConditionalOnProperty(
         name = SshShellProperties.SSH_SHELL_PREFIX + ".commands." + ActuatorCommand.GROUP + ".create",
@@ -67,73 +64,33 @@ public class ActuatorCommand extends AbstractCommand {
 
     public static final String GROUP = "actuator";
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ActuatorCommand.class);
+    public static final String AUDIT_AVAILABILITY_PROVIDER = "actuatorAuditAvailabilityProvider";
+    public static final String BEANS_AVAILABILITY_PROVIDER = "actuatorBeansAvailabilityProvider";
+    public static final String CONDITIONS_AVAILABILITY_PROVIDER = "actuatorConditionsAvailabilityProvider";
+    public static final String CONFIGPROPS_AVAILABILITY_PROVIDER = "actuatorConfigpropsAvailabilityProvider";
+    public static final String ENV_AVAILABILITY_PROVIDER = "actuatorEnvAvailabilityProvider";
+    public static final String HEALTH_AVAILABILITY_PROVIDER = "actuatorHealthAvailabilityProvider";
+    public static final String HTTP_EXCHANGES_AVAILABILITY_PROVIDER = "actuatorHttpExchangesAvailabilityProvider";
+    public static final String INFO_AVAILABILITY_PROVIDER = "actuatorInfoAvailabilityProvider";
+    public static final String LOGGERS_AVAILABILITY_PROVIDER = "actuatorLoggersAvailabilityProvider";
+    public static final String METRICS_AVAILABILITY_PROVIDER = "actuatorMetricsAvailabilityProvider";
+    public static final String MAPPINGS_AVAILABILITY_PROVIDER = "actuatorMappingsAvailabilityProvider";
+    public static final String SESSIONS_AVAILABILITY_PROVIDER = "actuatorSessionsAvailabilityProvider";
+    public static final String SCHEDULED_TASKS_AVAILABILITY_PROVIDER = "actuatorScheduledTasksAvailabilityProvider";
+    public static final String SHUTDOWN_AVAILABILITY_PROVIDER = "actuatorShutdownAvailabilityProvider";
+    public static final String THREAD_DUMP_AVAILABILITY_PROVIDER = "actuatorThreadDumpAvailabilityProvider";
+    private static final String SESSIONS_ENDPOINT_CLASS_NAME =
+            "org.springframework.boot.session.actuate.endpoint.SessionsEndpoint";
 
     private final ApplicationContext applicationContext;
 
     private final Environment environment;
 
-    private final AuditEventsEndpoint audit;
-
-    private final BeansEndpoint beans;
-
-    private final ConditionsReportEndpoint conditions;
-
-    private final ConfigurationPropertiesReportEndpoint configprops;
-
-    private final EnvironmentEndpoint env;
-
-    private final HealthEndpoint health;
-
-    private final HttpExchangesEndpoint httpExchanges;
-
-    private final InfoEndpoint info;
-
-    private final LoggersEndpoint loggers;
-
-    private final MetricsEndpoint metrics;
-
-    private final MappingsEndpoint mappings;
-
-    private final ScheduledTasksEndpoint scheduledtasks;
-
-    private final ShutdownEndpoint shutdown;
-
-    private final ThreadDumpEndpoint threaddump;
-
     public ActuatorCommand(ApplicationContext applicationContext, Environment environment,
-                           SshShellProperties properties, SshShellHelper helper,
-                           @Lazy AuditEventsEndpoint audit,
-                           @Lazy BeansEndpoint beans,
-                           @Lazy ConditionsReportEndpoint conditions,
-                           @Lazy ConfigurationPropertiesReportEndpoint configprops,
-                           @Lazy EnvironmentEndpoint env,
-                           @Lazy HealthEndpoint health,
-                           @Lazy HttpExchangesEndpoint httpExchanges,
-                           @Lazy InfoEndpoint info,
-                           @Lazy LoggersEndpoint loggers,
-                           @Lazy MetricsEndpoint metrics,
-                           @Lazy MappingsEndpoint mappings,
-                           @Lazy ScheduledTasksEndpoint scheduledtasks,
-                           @Lazy ShutdownEndpoint shutdown,
-                           @Lazy ThreadDumpEndpoint threaddump) {
+                           SshShellProperties properties, SshShellHelper helper) {
         super(helper, properties, properties.getCommands().getActuator());
         this.applicationContext = applicationContext;
         this.environment = environment;
-        this.audit = audit;
-        this.beans = beans;
-        this.conditions = conditions;
-        this.configprops = configprops;
-        this.env = env;
-        this.health = health;
-        this.httpExchanges = httpExchanges;
-        this.info = info;
-        this.loggers = loggers;
-        this.metrics = metrics;
-        this.mappings = mappings;
-        this.scheduledtasks = scheduledtasks;
-        this.shutdown = shutdown;
-        this.threaddump = threaddump;
     }
 
     /**
@@ -143,13 +100,13 @@ public class ActuatorCommand extends AbstractCommand {
      * @param type      to filter with
      * @return audit
      */
-    @ShellMethod(key = "audit", value = "Display audit endpoint.")
-    @ShellMethodAvailability("auditAvailability")
+    @Command(name = "audit", group = "Actuator Commands", description = "Display audit endpoint.",
+            availabilityProvider = AUDIT_AVAILABILITY_PROVIDER)
     public AuditEventsEndpoint.AuditEventsDescriptor audit(
-            @ShellOption(defaultValue = ShellOption.NULL, help = "Principal to filter on") String principal,
-            @ShellOption(defaultValue = ShellOption.NULL, help = "Type to filter on") String type
+            @Option(longName = "principal", description = "Principal to filter on", defaultValue = "") String principal,
+            @Option(longName = "type", description = "Type to filter on", defaultValue = "") String type
     ) {
-        return audit.events(principal, null, type);
+        return getEndpoint(AuditEventsEndpoint.class).events(emptyToNull(principal), null, emptyToNull(type));
     }
 
     /**
@@ -164,10 +121,10 @@ public class ActuatorCommand extends AbstractCommand {
      *
      * @return beans
      */
-    @ShellMethod(key = "beans", value = "Display beans endpoint.")
-    @ShellMethodAvailability("beansAvailability")
+    @Command(name = "beans", group = "Actuator Commands", description = "Display beans endpoint.",
+            availabilityProvider = BEANS_AVAILABILITY_PROVIDER)
     public BeansEndpoint.BeansDescriptor beans() {
-        return beans.beans();
+        return getEndpoint(BeansEndpoint.class).beans();
     }
 
     /**
@@ -182,10 +139,10 @@ public class ActuatorCommand extends AbstractCommand {
      *
      * @return conditions
      */
-    @ShellMethod(key = "conditions", value = "Display conditions endpoint.")
-    @ShellMethodAvailability("conditionsAvailability")
+    @Command(name = "conditions", group = "Actuator Commands", description = "Display conditions endpoint.",
+            availabilityProvider = CONDITIONS_AVAILABILITY_PROVIDER)
     public ConditionsReportEndpoint.ConditionsDescriptor conditions() {
-        return conditions.conditions();
+        return getEndpoint(ConditionsReportEndpoint.class).conditions();
     }
 
     /**
@@ -200,10 +157,10 @@ public class ActuatorCommand extends AbstractCommand {
      *
      * @return configprops
      */
-    @ShellMethod(key = "configprops", value = "Display configprops endpoint.")
-    @ShellMethodAvailability("configpropsAvailability")
+    @Command(name = "configprops", group = "Actuator Commands", description = "Display configprops endpoint.",
+            availabilityProvider = CONFIGPROPS_AVAILABILITY_PROVIDER)
     public ConfigurationPropertiesReportEndpoint.ConfigurationPropertiesDescriptor configprops() {
-        return configprops.configurationProperties();
+        return getEndpoint(ConfigurationPropertiesReportEndpoint.class).configurationProperties();
     }
 
     /**
@@ -219,10 +176,11 @@ public class ActuatorCommand extends AbstractCommand {
      * @param pattern pattern to filter with
      * @return env
      */
-    @ShellMethod(key = "env", value = "Display env endpoint.")
-    @ShellMethodAvailability("envAvailability")
-    public EnvironmentEndpoint.EnvironmentDescriptor env(@ShellOption(defaultValue = ShellOption.NULL, help = "Pattern to filter on") String pattern) {
-        return env.environment(pattern);
+    @Command(name = "env", group = "Actuator Commands", description = "Display env endpoint.",
+            availabilityProvider = ENV_AVAILABILITY_PROVIDER)
+    public EnvironmentEndpoint.EnvironmentDescriptor env(
+            @Option(longName = "pattern", description = "Pattern to filter on", defaultValue = "") String pattern) {
+        return getEndpoint(EnvironmentEndpoint.class).environment(emptyToNull(pattern));
     }
 
     /**
@@ -237,31 +195,15 @@ public class ActuatorCommand extends AbstractCommand {
      *
      * @return health
      */
-    @ShellMethod(key = "health", value = "Display health endpoint.")
-    @ShellMethodAvailability("healthAvailability")
-    public Object health(@ShellOption(defaultValue = ShellOption.NULL,
-            help = "Path to query health (component name, group name)") String path) {
-        try {
-            if (path != null) {
-                return health.healthForPath(path);
-            } else {
-                return health.health();
-            }
-        } catch (NoSuchMethodError e) {
-            // spring boot 1.9.x
-            try {
-                Method method = health.getClass().getMethod("health");
-                return method.invoke(health);
-            } catch (NoSuchMethodException ex) {
-                LOGGER.debug("Unable to get method: health from HealthEndpoint class: {}",
-                        health.getClass().getName(), ex);
-                throw e;
-            } catch (IllegalAccessException | InvocationTargetException ex) {
-                LOGGER.trace("Unable to invoke method: health from HealthEndpoint class: {}",
-                        health.getClass().getName(), ex);
-                throw e;
-            }
-        }
+    @Command(name = "health", group = "Actuator Commands", description = "Display health endpoint.",
+            availabilityProvider = HEALTH_AVAILABILITY_PROVIDER)
+    public Object health(
+            @Option(longName = "path", description = "Path to query health (component name, group name)",
+                    defaultValue = "")
+            String path) {
+        HealthEndpoint endpoint = getEndpoint(HealthEndpoint.class);
+        String targetPath = emptyToNull(path);
+        return targetPath != null ? endpoint.healthForPath(targetPath) : endpoint.health();
     }
 
     /**
@@ -276,10 +218,10 @@ public class ActuatorCommand extends AbstractCommand {
      *
      * @return httptrace
      */
-    @ShellMethod(key = "httpexchanges", value = "Display httpexchanges endpoint.")
-    @ShellMethodAvailability("httpExchangesAvailability")
+    @Command(name = "httpexchanges", group = "Actuator Commands",
+            description = "Display httpexchanges endpoint.", availabilityProvider = HTTP_EXCHANGES_AVAILABILITY_PROVIDER)
     public HttpExchangesEndpoint.HttpExchangesDescriptor httptrace() {
-        return httpExchanges.httpExchanges();
+        return getEndpoint(HttpExchangesEndpoint.class).httpExchanges();
     }
 
     /**
@@ -294,10 +236,10 @@ public class ActuatorCommand extends AbstractCommand {
      *
      * @return info
      */
-    @ShellMethod(key = "info", value = "Display info endpoint.")
-    @ShellMethodAvailability("infoAvailability")
+    @Command(name = "info", group = "Actuator Commands", description = "Display info endpoint.",
+            availabilityProvider = INFO_AVAILABILITY_PROVIDER)
     public Map<String, Object> info() {
-        return info.info();
+        return getEndpoint(InfoEndpoint.class).info();
     }
 
     /**
@@ -315,39 +257,42 @@ public class ActuatorCommand extends AbstractCommand {
      * @param loggerLevel logger level for configure
      * @return loggers
      */
-    @ShellMethod(key = "loggers", value = "Display or configure loggers.")
-    @ShellMethodAvailability("loggersAvailability")
+    @Command(name = "loggers", group = "Actuator Commands", description = "Display or configure loggers.",
+            availabilityProvider = LOGGERS_AVAILABILITY_PROVIDER)
     public Object loggers(
-            @ShellOption(help = "Action to perform", defaultValue = "list", valueProvider = EnumValueProvider.class) LoggerAction action,
-            @ShellOption(help = "Logger name for configuration or display", defaultValue = ShellOption.NULL) String loggerName,
-            @ShellOption(help = "Logger level for configuration", defaultValue = ShellOption.NULL, valueProvider = EnumValueProvider.class) LogLevel loggerLevel) {
-        if ((action == LoggerAction.get || action == LoggerAction.conf) && loggerName == null) {
+            @Option(longName = "action", description = "Action to perform", defaultValue = "list")
+            LoggerAction action,
+            @Option(longName = "logger-name", description = "Logger name for configuration or display",
+                    defaultValue = "")
+            String loggerName,
+            @Option(longName = "logger-level", description = "Logger level for configuration", defaultValue = "")
+            LogLevel loggerLevel) {
+        LoggersEndpoint endpoint = getEndpoint(LoggersEndpoint.class);
+        String targetLoggerName = emptyToNull(loggerName);
+        if ((action == LoggerAction.get || action == LoggerAction.conf) && targetLoggerName == null) {
             throw new IllegalArgumentException("Logger name is mandatory for '" + action + "' action");
         }
-        switch (action) {
+        return switch (action) {
             case get -> {
-                LoggersEndpoint.LoggerLevelsDescriptor levels = loggers.loggerLevels(loggerName);
-                return "Logger named [" + loggerName + "] : [configured: " + levels.getConfiguredLevel() + "]";
+                LoggersEndpoint.LoggerLevelsDescriptor levels = endpoint.loggerLevels(targetLoggerName);
+                yield "Logger named [" + targetLoggerName + "] : [configured: " + levels.getConfiguredLevel() + "]";
             }
             case conf -> {
                 if (loggerLevel == null) {
                     throw new IllegalArgumentException("Logger level is mandatory for '" + action + "' action");
                 }
-                loggers.configureLogLevel(loggerName, loggerLevel);
-                return "Logger named [" + loggerName + "] now configured to level [" + loggerLevel + "]";
+                endpoint.configureLogLevel(targetLoggerName, loggerLevel);
+                yield "Logger named [" + targetLoggerName + "] now configured to level [" + loggerLevel + "]";
             }
-            default -> {
-                // list
-                return loggers.loggers();
-            }
-        }
+            default -> endpoint.loggers();
+        };
     }
 
     /**
      * @return whether `loggers` command is available
      */
     public Availability loggersAvailability() {
-        return availability("loggers", LoggersEndpoint.class);
+        return availability("loggers", LoggersEndpoint.class, true, true);
     }
 
     /**
@@ -357,22 +302,26 @@ public class ActuatorCommand extends AbstractCommand {
      * @param tags tags to filter with
      * @return metrics
      */
-    @ShellMethod(key = "metrics", value = "Display metrics endpoint.")
-    @ShellMethodAvailability("metricsAvailability")
+    @Command(name = "metrics", group = "Actuator Commands", description = "Display metrics endpoint.",
+            availabilityProvider = METRICS_AVAILABILITY_PROVIDER)
     public Object metrics(
-            @ShellOption(help = "Metric name to get", defaultValue = ShellOption.NULL) String name,
-            @ShellOption(help = "Tags (key=value, separated by coma)", defaultValue = ShellOption.NULL) String tags
+            @Option(longName = "name", description = "Metric name to get", defaultValue = "") String name,
+            @Option(longName = "tags", description = "Tags (key=value, separated by coma)", defaultValue = "")
+            String tags
     ) {
-        if (name != null) {
-            MetricsEndpoint.MetricDescriptor result = metrics.metric(name, tags != null ? Arrays.asList(tags.split(",")
-            ) : null);
+        MetricsEndpoint endpoint = getEndpoint(MetricsEndpoint.class);
+        String metricName = emptyToNull(name);
+        String metricTags = emptyToNull(tags);
+        if (metricName != null) {
+            MetricsEndpoint.MetricDescriptor result = endpoint.metric(metricName,
+                    metricTags != null ? Arrays.asList(metricTags.split(",")) : null);
             if (result == null) {
-                String tagsStr = tags != null ? " and tags: " + tags : "";
-                throw new IllegalArgumentException("No result for metrics name: " + name + tagsStr);
+                String tagsStr = metricTags != null ? " and tags: " + metricTags : "";
+                throw new IllegalArgumentException("No result for metrics name: " + metricName + tagsStr);
             }
             return result;
         }
-        return metrics.listNames();
+        return endpoint.listNames();
     }
 
     /**
@@ -387,10 +336,10 @@ public class ActuatorCommand extends AbstractCommand {
      *
      * @return mappings
      */
-    @ShellMethod(key = "mappings", value = "Display mappings endpoint.")
-    @ShellMethodAvailability("mappingsAvailability")
+    @Command(name = "mappings", group = "Actuator Commands", description = "Display mappings endpoint.",
+            availabilityProvider = MAPPINGS_AVAILABILITY_PROVIDER)
     public MappingsEndpoint.ApplicationMappingsDescriptor mappings() {
-        return mappings.mappings();
+        return getEndpoint(MappingsEndpoint.class).mappings();
     }
 
     /**
@@ -405,17 +354,18 @@ public class ActuatorCommand extends AbstractCommand {
      *
      * @return sessions
      */
-    @ShellMethod(key = "sessions", value = "Display sessions endpoint.")
-    @ShellMethodAvailability("sessionsAvailability")
-    public SessionsEndpoint.SessionsDescriptor sessions() {
-        return applicationContext.getBean(SessionsEndpoint.class).sessionsForUsername(null);
+    @Command(name = "sessions", group = "Actuator Commands", description = "Display sessions endpoint.",
+            availabilityProvider = SESSIONS_AVAILABILITY_PROVIDER)
+    public Object sessions() {
+        return invokeEndpointMethod(SESSIONS_ENDPOINT_CLASS_NAME, "sessionsForUsername",
+                new Class[]{String.class}, new Object[]{null});
     }
 
     /**
      * @return whether `sessions` command is available
      */
     public Availability sessionsAvailability() {
-        return availability("sessions", SessionsEndpoint.class);
+        return endpointAvailability("sessions", SESSIONS_ENDPOINT_CLASS_NAME);
     }
 
     /**
@@ -423,10 +373,10 @@ public class ActuatorCommand extends AbstractCommand {
      *
      * @return scheduledtasks
      */
-    @ShellMethod(key = "scheduledtasks", value = "Display scheduledtasks endpoint.")
-    @ShellMethodAvailability("scheduledtasksAvailability")
+    @Command(name = "scheduledtasks", group = "Actuator Commands",
+            description = "Display scheduledtasks endpoint.", availabilityProvider = SCHEDULED_TASKS_AVAILABILITY_PROVIDER)
     public ScheduledTasksEndpoint.ScheduledTasksDescriptor scheduledtasks() {
-        return scheduledtasks.scheduledTasks();
+        return getEndpoint(ScheduledTasksEndpoint.class).scheduledTasks();
     }
 
     /**
@@ -441,12 +391,12 @@ public class ActuatorCommand extends AbstractCommand {
      *
      * @return shutdown message
      */
-    @ShellMethod(key = "shutdown", value = "Shutdown application.")
-    @ShellMethodAvailability("shutdownAvailability")
+    @Command(name = "shutdown", group = "Actuator Commands", description = "Shutdown application.",
+            availabilityProvider = SHUTDOWN_AVAILABILITY_PROVIDER)
     public String shutdown() {
-        if (helper.confirm("Are you sure you want to shutdown application ? [y/N]")) {
+        if (helper.confirm("Are you sure you want to shutdown application ?")) {
             helper.print("Shutting down application...");
-            shutdown.shutdown();
+            getEndpoint(ShutdownEndpoint.class).shutdown();
             return "";
         } else {
             return "Aborting shutdown";
@@ -457,7 +407,7 @@ public class ActuatorCommand extends AbstractCommand {
      * @return whether `shutdown` command is available
      */
     public Availability shutdownAvailability() {
-        return availability("shutdown", ShutdownEndpoint.class, false);
+        return availability("shutdown", ShutdownEndpoint.class, false, true);
     }
 
     /**
@@ -465,10 +415,10 @@ public class ActuatorCommand extends AbstractCommand {
      *
      * @return threaddump
      */
-    @ShellMethod(key = "threaddump", value = "Display threaddump endpoint.")
-    @ShellMethodAvailability("threaddumpAvailability")
+    @Command(name = "threaddump", group = "Actuator Commands", description = "Display threaddump endpoint.",
+            availabilityProvider = THREAD_DUMP_AVAILABILITY_PROVIDER)
     public ThreadDumpEndpoint.ThreadDumpDescriptor threaddump() {
-        return threaddump.threadDump();
+        return getEndpoint(ThreadDumpEndpoint.class).threadDump();
     }
 
     /**
@@ -479,27 +429,103 @@ public class ActuatorCommand extends AbstractCommand {
     }
 
     private Availability availability(String name, Class<?> clazz) {
-        return availability(name, clazz, true);
+        return availability(name, clazz, true, false);
     }
 
-    private Availability availability(String name, Class<?> clazz, boolean defaultValue) {
-        Availability av = availability(GROUP, name);
-        boolean forbidden = av.getReason() != null && av.getReason().contains("forbidden");
-        if (!av.isAvailable() && (!forbidden || !"info".equals(name))) {
-            // not available from abstract, and not forbidden, or if forbidden not info
-            return av;
+    private Availability availability(String name, Class<?> clazz, boolean defaultEnabled) {
+        return availability(name, clazz, defaultEnabled, false);
+    }
+
+    private Availability availability(String name, Class<?> clazz, boolean defaultEnabled, boolean writeOperation) {
+        Availability availability = availability(GROUP, name);
+        boolean forbidden = availability.reason() != null && availability.reason().contains("forbidden");
+        if (!availability.isAvailable() && (!forbidden || !"info".equals(name))) {
+            return availability;
         }
-        String property = "management.endpoint." + name + ".enabled";
-        if (!environment.getProperty(property, Boolean.TYPE, defaultValue)) {
-            return Availability.unavailable("endpoint '" + name + "' deactivated (please check property '" + property
-                    + "')");
+
+        String enabledProperty = "management.endpoint." + name + ".enabled";
+        if (!environment.getProperty(enabledProperty, Boolean.TYPE, defaultEnabled)) {
+            return Availability.unavailable("endpoint '" + name + "' deactivated (please check property '"
+                    + enabledProperty + "')");
         }
+
+        String maxPermitted = environment.getProperty("management.endpoints.access.max-permitted");
+        if ("none".equalsIgnoreCase(maxPermitted)) {
+            return Availability.unavailable("endpoint '" + name
+                    + "' is not accessible (please check property 'management.endpoints.access.max-permitted')");
+        }
+        if (writeOperation && "read-only".equalsIgnoreCase(maxPermitted)) {
+            return Availability.unavailable("endpoint '" + name
+                    + "' is read-only (please check property 'management.endpoints.access.max-permitted')");
+        }
+
+        String accessProperty = "management.endpoint." + name + ".access";
+        String access = environment.getProperty(accessProperty);
+        if ("none".equalsIgnoreCase(access)) {
+            return Availability.unavailable("endpoint '" + name + "' is not accessible (please check property '"
+                    + accessProperty + "')");
+        }
+        if (writeOperation && "read-only".equalsIgnoreCase(access)) {
+            return Availability.unavailable("endpoint '" + name + "' is read-only (please check property '"
+                    + accessProperty + "')");
+        }
+
         try {
             applicationContext.getBean(clazz);
         } catch (NoSuchBeanDefinitionException e) {
             return Availability.unavailable(clazz.getName() + " is not in application context");
         }
         return Availability.available();
+    }
+
+    private Availability endpointAvailability(String name, String className) {
+        return endpointAvailability(name, className, true, false);
+    }
+
+    private Availability endpointAvailability(String name, String className, boolean defaultEnabled,
+                                             boolean writeOperation) {
+        Class<?> clazz = resolveClass(className);
+        if (clazz == null) {
+            return Availability.unavailable(className + " is not on classpath");
+        }
+        return availability(name, clazz, defaultEnabled, writeOperation);
+    }
+
+    private <T> T getEndpoint(Class<T> endpointType) {
+        return applicationContext.getBean(endpointType);
+    }
+
+    private Object invokeEndpointMethod(String className, String methodName, Class<?>[] parameterTypes,
+                                        Object[] args) {
+        Class<?> endpointClass = resolveClass(className);
+        if (endpointClass == null) {
+            throw new IllegalStateException(className + " is not on classpath");
+        }
+        Object endpoint = applicationContext.getBean(endpointClass);
+        try {
+            Method method = endpointClass.getMethod(methodName, parameterTypes);
+            return method.invoke(endpoint, args);
+        } catch (NoSuchMethodException | IllegalAccessException e) {
+            throw new IllegalStateException("Unable to invoke " + className + "." + methodName, e);
+        } catch (InvocationTargetException e) {
+            Throwable targetException = e.getTargetException();
+            if (targetException instanceof RuntimeException runtimeException) {
+                throw runtimeException;
+            }
+            throw new IllegalStateException("Unable to invoke " + className + "." + methodName, targetException);
+        }
+    }
+
+    private Class<?> resolveClass(String className) {
+        try {
+            return Class.forName(className, false, applicationContext.getClassLoader());
+        } catch (ClassNotFoundException e) {
+            return null;
+        }
+    }
+
+    private static String emptyToNull(String value) {
+        return value == null || value.isBlank() ? null : value;
     }
 
     /**

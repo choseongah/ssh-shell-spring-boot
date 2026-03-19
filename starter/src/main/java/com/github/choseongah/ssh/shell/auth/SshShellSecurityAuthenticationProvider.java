@@ -27,7 +27,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.GrantedAuthority;
 
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -102,7 +102,6 @@ public class SshShellSecurityAuthenticationProvider
             return auth.isAuthenticated();
         } catch (AuthenticationException e) {
             LOGGER.error("Unable to authenticate user [{}] : {}", username, e.getMessage());
-            LOGGER.debug("Unable to authenticate user [{}]", username, e);
             return false;
         }
     }

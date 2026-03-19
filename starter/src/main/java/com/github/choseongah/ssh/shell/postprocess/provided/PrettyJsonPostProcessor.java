@@ -16,8 +16,8 @@
 
 package com.github.choseongah.ssh.shell.postprocess.provided;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 import com.github.choseongah.ssh.shell.postprocess.PostProcessor;
 import com.github.choseongah.ssh.shell.postprocess.PostProcessorException;
 import lombok.AllArgsConstructor;
@@ -49,7 +49,7 @@ public class PrettyJsonPostProcessor
     public String process(Object result, List<String> parameters) throws PostProcessorException {
         try {
             return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(result);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             LOGGER.warn("Unable to prettify object: {}", result);
             throw new PostProcessorException("Unable to prettify object. " + e.getMessage(), e);
         }
