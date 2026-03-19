@@ -16,12 +16,12 @@
 
 package com.github.choseongah.ssh.shell.commands;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.choseongah.ssh.shell.SshShellHelper;
 import com.github.choseongah.ssh.shell.SshShellProperties;
 import com.github.choseongah.ssh.shell.postprocess.provided.GrepPostProcessor;
 import com.github.choseongah.ssh.shell.postprocess.provided.JsonPointerPostProcessor;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.Arrays;
 

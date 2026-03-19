@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE, classes =
-        SshShellApplicationExclusionsTest.class, properties = {
+        SshShellApplicationExclusionsTest.TestApplication.class, properties = {
         "ssh.shell.port=2344",
         "ssh.shell.commands.actuator.excludes[0]=info",
         "ssh.shell.commands.actuator.excludes[1]=beans",
@@ -36,11 +36,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
         "ssh.shell.hostKeyFile=target/test.tmp",
         "ssh.shell.enable=true",
         "management.endpoints.web.exposure.include=*",
+        "spring.session.store-type=none",
+        "spring.autoconfigure.exclude=org.springframework.boot.session.autoconfigure.SessionAutoConfiguration,"
+                + "org.springframework.boot.session.autoconfigure.SessionsEndpointAutoConfiguration",
         "spring.shell.interactive.enabled=false"
 })
-@SpringBootApplication
 @DirtiesContext
-public class SshShellApplicationExclusionsTest
+class SshShellApplicationExclusionsTest
         extends AbstractTest {
 
     @Test
@@ -50,5 +52,9 @@ public class SshShellApplicationExclusionsTest
         assertFalse(cmd.infoAvailability().isAvailable());
         assertFalse(cmd.beansAvailability().isAvailable());
         assertTrue(cmd.configpropsAvailability().isAvailable());
+    }
+
+    @SpringBootApplication
+    static class TestApplication {
     }
 }

@@ -42,7 +42,7 @@ import org.springframework.security.web.SecurityFilterChain;
 public class CompleteSecurity {
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, AuthenticationManager authManager) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, AuthenticationManager authManager) {
         http.authorizeHttpRequests(authorize -> authorize
                 .requestMatchers("/ping").permitAll()
                 .requestMatchers(EndpointRequest.to("info")).permitAll()

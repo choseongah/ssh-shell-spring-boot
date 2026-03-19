@@ -25,7 +25,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public abstract class AbstractDemoApplicationTest {
+abstract class AbstractDemoApplicationTest {
 
     @Autowired
     private InfoEndpoint info;

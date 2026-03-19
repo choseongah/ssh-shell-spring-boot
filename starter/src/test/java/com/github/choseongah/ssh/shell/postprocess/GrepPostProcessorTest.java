@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class GrepPostProcessorTest {
 
-    public static final String TEST = "test\ntoto\ntiti\ntest";
+    private static final String TEST = "test\ntoto\ntiti\ntest";
 
     private static GrepPostProcessor processor;
 

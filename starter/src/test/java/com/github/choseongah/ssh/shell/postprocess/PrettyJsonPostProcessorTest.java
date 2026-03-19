@@ -16,18 +16,17 @@
 
 package com.github.choseongah.ssh.shell.postprocess;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.choseongah.ssh.shell.postprocess.provided.PrettyJsonPostProcessor;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.actuate.health.Health;
+import org.springframework.boot.health.contributor.Health;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class PrettyJsonPostProcessorTest {
 
@@ -50,15 +49,22 @@ class PrettyJsonPostProcessorTest {
         assertEquals("\"test\"", processor.process("test", null));
         assertEquals(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(test),
                 processor.process(test, null));
-        assertThrows(PostProcessorException.class, () -> processor.process(new NotSerializableObject("test"), null));
+        assertEquals(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(Collections.emptyMap()),
+                processor.process(new NotSerializableObject("test"), null));
     }
 
-    public static class NotSerializableObject {
+    static class NotSerializableObject {
 
-        public static final Logger LOGGER = LoggerFactory.getLogger(NotSerializableObject.class);
+        private static final Logger LOGGER = LoggerFactory.getLogger(NotSerializableObject.class);
 
-        public NotSerializableObject(String test) {
+        private final Object self = this;
+
+        NotSerializableObject(String test) {
             LOGGER.info(test);
+        }
+
+        Object getSelf() {
+            return self;
         }
     }
 }

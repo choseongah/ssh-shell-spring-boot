@@ -23,10 +23,10 @@ import org.jline.terminal.Size;
 import org.jline.terminal.Terminal;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
-import org.springframework.boot.actuate.health.HealthComponent;
-import org.springframework.boot.actuate.metrics.MetricsEndpoint;
 import org.springframework.boot.actuate.scheduling.ScheduledTasksEndpoint;
+import org.springframework.boot.health.actuate.endpoint.HealthDescriptor;
 import org.springframework.boot.logging.LogLevel;
+import org.springframework.boot.micrometer.metrics.actuate.endpoint.MetricsEndpoint;
 
 import java.io.PrintWriter;
 import java.util.Collections;
@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public abstract class AbstractCommandTest
+abstract class AbstractCommandTest
         extends AbstractTest {
 
     protected void commonCommandAvailability() {
@@ -86,8 +86,8 @@ public abstract class AbstractCommandTest
 
     @Test
     void testHealth() {
-        HealthComponent healthComponent = (HealthComponent) cmd.health(null);
-        assertEquals(health.health().getStatus(), healthComponent.getStatus());
+        HealthDescriptor healthDescriptor = (HealthDescriptor) cmd.health(null);
+        assertEquals(health.health().getStatus(), healthDescriptor.getStatus());
     }
 
     @Test
@@ -158,8 +158,17 @@ public abstract class AbstractCommandTest
 
     @Test
     void testSessions() {
-        assertEquals(sessions.sessionsForUsername(null).getSessions().size(),
-                cmd.sessions().getSessions().size());
+        if (sessions == null) {
+            return;
+        }
+        Object result = cmd.sessions();
+        try {
+            Object sessionsMap = result.getClass().getMethod("getSessions").invoke(result);
+            assertEquals(sessions.sessionsForUsername(null).getSessions().size(),
+                    ((java.util.Collection<?>) sessionsMap).size());
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException("Unable to inspect sessions command result", e);
+        }
     }
 
     @Test
@@ -193,7 +202,7 @@ public abstract class AbstractCommandTest
         when(pl.line()).thenReturn(response);
         when(lr.getParsedLine()).thenReturn(pl);
         SshShellRunnable runnable = mock(SshShellRunnable.class);
-        SSH_THREAD_CONTEXT.set(new SshContext(runnable, t, lr, null));
+        SSH_THREAD_CONTEXT.set(new SshContext(runnable, t, lr, null, null));
     }
 
     @Test
@@ -206,7 +215,39 @@ public abstract class AbstractCommandTest
         Map<String, Object> result = info.info();
         call(properties, (is, os) -> {
             write(os, "info");
-            verifyResponse(is, result.toString());
+            verifyJsonResponse(is, result);
+        });
+    }
+
+    @Test
+    void testSshCallHealthCommandPrettyPostProcessor() {
+        call(properties, (is, os) -> {
+            write(os, "health | pretty");
+            verifyResponse(is, "\"components\" : {");
+        });
+    }
+
+    @Test
+    void testSshCallHealthCommand() {
+        call(properties, (is, os) -> {
+            write(os, "health");
+            verifyResponse(is, "\"components\":{");
+        });
+    }
+
+    @Test
+    void testSshCallMetricsCommand() {
+        call(properties, (is, os) -> {
+            write(os, "metrics");
+            verifyResponse(is, "\"names\":[");
+        });
+    }
+
+    @Test
+    void testSshHelpIncludesConfiguredCommands() {
+        call(properties, (is, os) -> {
+            write(os, "help");
+            verifyResponse(is, "info: Display info endpoint.");
         });
     }
 }

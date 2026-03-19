@@ -24,8 +24,7 @@ import org.springframework.test.annotation.DirtiesContext;
         "spring.shell.interactive.enabled=false"
 })
 @DirtiesContext
-public class DemoApplicationWebEnvTest
+class DemoApplicationWebEnvTest
         extends AbstractDemoApplicationTest {
 
 }
-

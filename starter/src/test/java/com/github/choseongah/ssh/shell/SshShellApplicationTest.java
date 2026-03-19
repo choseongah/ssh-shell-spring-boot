@@ -32,17 +32,19 @@ import org.springframework.test.annotation.DirtiesContext;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE,
-        classes = {SshShellApplicationTest.class, SshShellSessionConfigurationTest.class},
+        classes = {SshShellApplicationTest.TestApplication.class, SshShellSessionConfigurationTest.class},
         properties = {
                 "ssh.shell.port=2345",
                 "ssh.shell.password=pass",
+                "ssh.shell.commands.datasource.enabled=true",
+                "ssh.shell.commands.jmx.enabled=true",
+                "ssh.shell.commands.tasks.enabled=true",
                 "management.endpoints.web.exposure.include=*",
                 "spring.shell.interactive.enabled=false",
                 "spring.jmx.enabled=true"
         })
-@SpringBootApplication
 @DirtiesContext
-public class SshShellApplicationTest
+class SshShellApplicationTest
         extends AbstractCommandTest {
 
     @Autowired(required = false)
@@ -95,5 +97,9 @@ public class SshShellApplicationTest
         assertThrows(IllegalArgumentException.class, () -> tasks.tasksStop(false, "unknown"));
         assertThrows(IllegalArgumentException.class, () -> tasks.tasksRestart(false, "unknown"));
         assertThrows(IllegalArgumentException.class, () -> tasks.tasksSingle(false, "unknown"));
+    }
+
+    @SpringBootApplication
+    static class TestApplication {
     }
 }

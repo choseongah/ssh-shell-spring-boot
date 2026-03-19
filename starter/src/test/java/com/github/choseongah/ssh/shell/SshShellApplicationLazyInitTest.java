@@ -22,22 +22,25 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.DirtiesContext;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        classes = {SshShellApplicationLazyInitTest.class, SshShellSessionConfigurationTest.class},
+        classes = {SshShellApplicationLazyInitTest.TestApplication.class, SshShellSessionConfigurationTest.class},
         properties = {
                 "ssh.shell.port=2347",
                 "ssh.shell.password=pass",
                 "ssh.shell.shared-history=false",
-                "ssh.shell.commands.manage-sessions.enable=true",
+                "ssh.shell.commands.manage-sessions.enabled=true",
                 "management.endpoints.web.exposure.include=*",
                 "spring.main.lazy-initialization=true",
                 "spring.shell.interactive.enabled=false"
         }
 )
-@SpringBootApplication
 @DirtiesContext
-public class SshShellApplicationLazyInitTest
+class SshShellApplicationLazyInitTest
         extends SshShellApplicationWebTest {
 
         // exactly same tests as extended test,
         // the aim is to test if application starts with spring.main.lazy-initialization=true
+
+    @SpringBootApplication
+    static class TestApplication {
+    }
 }

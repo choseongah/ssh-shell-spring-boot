@@ -30,14 +30,14 @@ import javax.sql.DataSource;
 public class SshShellSessionConfigurationTest {
 
     @Bean
-    public EmbeddedDatabase dataSource() {
+    EmbeddedDatabase dataSource() {
         return new EmbeddedDatabaseBuilder()
                 .setType(EmbeddedDatabaseType.H2)
                 .addScript("org/springframework/session/jdbc/schema-h2.sql").build();
     }
 
     @Bean
-    public PlatformTransactionManager transactionManager(DataSource dataSource) {
+    PlatformTransactionManager transactionManager(DataSource dataSource) {
         return new DataSourceTransactionManager(dataSource);
     }
 }

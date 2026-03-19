@@ -64,7 +64,7 @@ class HistoryCommandTest {
     private void testGet(HistoryCommand cmd, boolean displayArray) throws Exception {
         if (!displayArray) {
             String result = (String) cmd.history(null, false);
-            assertEquals("cmd1\ncmd2\n", result);
+            assertEquals("cmd1" + System.lineSeparator() + "cmd2" + System.lineSeparator(), result);
         } else {
             List<String> lines = (List<String>) cmd.history(null, true);
             assertNotNull(lines);
@@ -84,6 +84,7 @@ class HistoryCommandTest {
         File file = new File(fileName);
         String lines = (String) cmd.history(file, false);
         assertNotNull(lines);
-        assertTrue(lines.startsWith("Wrote 2 entries to"));
+        assertEquals(file.getAbsolutePath(), lines);
+        assertTrue(file.isFile());
     }
 }

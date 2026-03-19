@@ -47,7 +47,7 @@ class SystemCommandTest extends AbstractShellHelperTest {
     }
 
     @Test
-    void threads() throws Exception {
+    void threads() {
         for (SystemCommand.ThreadColumn tc : SystemCommand.ThreadColumn.values()) {
             assertNotNull(command.threads(SystemCommand.ThreadAction.list, tc, true, true, null));
         }
@@ -60,11 +60,12 @@ class SystemCommandTest extends AbstractShellHelperTest {
                 () -> assertNotNull(command.threads(SystemCommand.ThreadAction.dump,
                         SystemCommand.ThreadColumn.name, true, true, -1L)));
 
-        when(reader.read(100L)).thenReturn(113);
+        setReaderResponses(113);
         assertEquals("", command.threads(SystemCommand.ThreadAction.list, SystemCommand.ThreadColumn.name, true, false,
                 null));
 
         when(ter.getSize()).thenReturn(new Size(10, 10));
+        setReaderResponses(113);
         assertEquals("", command.threads(SystemCommand.ThreadAction.list, SystemCommand.ThreadColumn.name, true, false,
                 null));
     }

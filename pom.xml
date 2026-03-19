@@ -20,7 +20,7 @@
 
     <groupId>com.github.choseongah</groupId>
     <artifactId>ssh-shell-spring-boot-parent</artifactId>
-    <version>4.0.1-1-SNAPSHOT</version>
+    <version>4.0.1-1</version>
 
     <packaging>pom</packaging>
 
@@ -60,9 +60,9 @@
         <spring-shell.version>4.0.1</spring-shell.version>
         <jackson.version>3.1.0</jackson.version>
         <!--sonar-->
-        <sonar.projectKey>fonimus_ssh-shell-spring-boot</sonar.projectKey>
+        <sonar.projectKey>choseongah_ssh-shell-spring-boot</sonar.projectKey>
         <sonar.moduleKey>${project.artifactId}</sonar.moduleKey>
-        <sonar.organization>fonimus</sonar.organization>
+        <sonar.organization>choseongah</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
     </properties>
 
