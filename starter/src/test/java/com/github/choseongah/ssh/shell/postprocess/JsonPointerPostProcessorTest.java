@@ -16,11 +16,11 @@
 
 package com.github.choseongah.ssh.shell.postprocess;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.choseongah.ssh.shell.postprocess.provided.JsonPointerPostProcessor;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.actuate.health.Health;
+import org.springframework.boot.health.contributor.Health;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -38,7 +38,7 @@ class JsonPointerPostProcessorTest {
     }
 
     @Test
-    void process() throws Exception {
+    void process() {
         Health health = Health.down()
                 .withDetail("test", "value")
                 .withDetail("map", Collections.singletonMap("key", "map-value"))

@@ -27,16 +27,17 @@ import java.util.Map;
 import static com.github.choseongah.ssh.shell.SshHelperTest.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE,
-        classes = {SshShellApplicationCustomAuthenticatorTest.class, SshShellPasswordConfigurationTest.class},
+        classes = {SshShellApplicationCustomAuthenticatorTest.TestApplication.class, SshShellPasswordConfigurationTest.class},
         properties = {
                 "ssh.shell.port=2349",
                 "management.endpoints.web.exposure.include=*",
+                "spring.autoconfigure.exclude=org.springframework.boot.session.autoconfigure.SessionAutoConfiguration,"
+                        + "org.springframework.boot.session.autoconfigure.SessionsEndpointAutoConfiguration",
                 "spring.shell.interactive.enabled=false"
         }
 )
-@SpringBootApplication
 @DirtiesContext
-public class SshShellApplicationCustomAuthenticatorTest
+class SshShellApplicationCustomAuthenticatorTest
         extends AbstractTest {
 
     @Test
@@ -44,7 +45,7 @@ public class SshShellApplicationCustomAuthenticatorTest
         Map<String, Object> result = info.info();
         call("user", "user", properties, (is, os) -> {
             write(os, "info");
-            verifyResponse(is, result.toString());
+            verifyJsonResponse(is, result);
         });
     }
 
@@ -53,8 +54,11 @@ public class SshShellApplicationCustomAuthenticatorTest
         Map<String, Object> result = info.info();
         call("myself", "myself", properties, (is, os) -> {
             write(os, "info");
-            verifyResponse(is, result.toString());
+            verifyJsonResponse(is, result);
         });
     }
 
+    @SpringBootApplication
+    static class TestApplication {
+    }
 }

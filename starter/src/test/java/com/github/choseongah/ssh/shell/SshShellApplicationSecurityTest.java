@@ -27,18 +27,21 @@ import java.util.Map;
 import static com.github.choseongah.ssh.shell.SshHelperTest.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        classes = {SshShellApplicationSecurityTest.class, SshShellSecurityConfigurationTest.class},
+        classes = {SshShellApplicationSecurityTest.TestApplication.class, SshShellSecurityConfigurationTest.class},
         properties = {
                 "ssh.shell.port=2346",
                 "ssh.shell.password=pass",
                 "ssh.shell.authentication=security",
+                "ssh.shell.authProviderBeanName=authManager",
                 "management.endpoints.web.exposure.include=*",
+                "spring.session.store-type=none",
+                "spring.autoconfigure.exclude=org.springframework.boot.session.autoconfigure.SessionAutoConfiguration,"
+                        + "org.springframework.boot.session.autoconfigure.SessionsEndpointAutoConfiguration",
                 "spring.shell.interactive.enabled=false"
         }
 )
-@SpringBootApplication
 @DirtiesContext
-public class SshShellApplicationSecurityTest
+class SshShellApplicationSecurityTest
         extends AbstractTest {
 
     @Test
@@ -46,7 +49,7 @@ public class SshShellApplicationSecurityTest
         Map<String, Object> result = info.info();
         call("admin", "admin", properties, (is, os) -> {
             write(os, "info");
-            verifyResponse(is, result.toString());
+            verifyJsonResponse(is, result);
         });
     }
 
@@ -56,5 +59,9 @@ public class SshShellApplicationSecurityTest
             write(os, "health");
             verifyResponse(is, "forbidden for current user");
         });
+    }
+
+    @SpringBootApplication
+    static class TestApplication {
     }
 }

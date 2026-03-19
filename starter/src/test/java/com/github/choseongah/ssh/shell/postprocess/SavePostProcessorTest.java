@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SavePostProcessorTest {
 
-    public static final String TEST = "to-write";
+    private static final String TEST = "to-write";
 
     private static SavePostProcessor processor;
 

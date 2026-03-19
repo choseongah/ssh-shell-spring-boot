@@ -16,11 +16,6 @@
 
 package com.github.choseongah.ssh.shell;
 
-import com.github.choseongah.ssh.shell.interactive.Interactive;
-import com.github.choseongah.ssh.shell.interactive.InteractiveInput;
-import com.github.choseongah.ssh.shell.interactive.InteractiveInputIO;
-import com.github.choseongah.ssh.shell.interactive.KeyBinding;
-import com.github.choseongah.ssh.shell.interactive.StoppableInteractiveInput;
 import com.github.choseongah.ssh.shell.interactive.*;
 import org.jline.reader.impl.completer.ArgumentCompleter;
 import org.jline.terminal.Size;
@@ -141,31 +136,16 @@ class SshShellHelperTest extends AbstractShellHelperTest {
 
     @Test
     void checkAuthorities() {
-        assertTrue(h.checkAuthorities(Collections.singletonList("ACTUATOR")));
-        assertTrue(h.checkAuthorities(Collections.singletonList("ACTUATOR")));
-        assertFalse(h.checkAuthorities(Collections.singletonList("TOTO")));
         assertTrue(h.checkAuthorities(Collections.singletonList("ACTUATOR"), Collections.singletonList("ACTUATOR"),
                 true));
+        assertTrue(h.checkAuthorities(Collections.singletonList("ACTUATOR"),
+                Collections.singletonList("ROLE_ACTUATOR"), false));
+        assertFalse(h.checkAuthorities(Collections.singletonList("TOTO"),
+                Collections.singletonList("ROLE_ACTUATOR"), false));
         assertTrue(h.checkAuthorities(Collections.singletonList("ACTUATOR"), Collections.singletonList("ACTUATOR"),
                 false));
         assertTrue(h.checkAuthorities(Collections.singletonList("ACTUATOR"), null, true));
         assertFalse(h.checkAuthorities(Collections.singletonList("ACTUATOR"), null, false));
-    }
-
-    @Test
-    void getAuthentication() {
-        assertNotNull(h.getAuthentication());
-    }
-
-    @Test
-    void getSshSession() {
-        assertNotNull(h.getSshSession());
-        assertNotNull(h.getSshSession().getIoSession());
-    }
-
-    @Test
-    void getSshEnv() {
-        assertNotNull(h.getSshEnvironment());
     }
 
     @Test
@@ -195,15 +175,13 @@ class SshShellHelperTest extends AbstractShellHelperTest {
     }
 
     @Test
-    void interactive() throws Exception {
+    void interactive() {
         // return 'q' = 113 after third times
-        when(reader.read(100L))
-                // '-','+' char
-                .thenReturn(43).thenReturn(45)
-                // 'f' char
-                .thenReturn(102)
-                // 'q' char
-                .thenReturn(113).thenReturn(113).thenReturn(113);
+        setReaderResponses(
+                43, 45,
+                102,
+                113, 113, 113
+        );
 
         when(ter.getSize()).thenReturn(new Size(13, 40));
         final int[] count = {0};

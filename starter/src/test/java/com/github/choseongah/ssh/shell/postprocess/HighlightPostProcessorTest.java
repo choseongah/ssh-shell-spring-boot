@@ -30,7 +30,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class HighlightPostProcessorTest {
 
-    public static final String TEST = "test\ntoto\ntiti\ntest";
+    private static final String TEST = "test\ntoto\ntiti\ntest";
 
     private static HighlightPostProcessor processor;
 

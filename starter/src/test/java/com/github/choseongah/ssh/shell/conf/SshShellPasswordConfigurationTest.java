@@ -22,7 +22,7 @@ import org.springframework.context.annotation.Bean;
 public class SshShellPasswordConfigurationTest {
 
     @Bean
-    public SshShellAuthenticationProvider passwordAuthenticator() {
+    SshShellAuthenticationProvider passwordAuthenticator() {
         return (user, pass, serverSession) -> user.equals(pass);
     }
 

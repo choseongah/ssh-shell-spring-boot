@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @SpringBootTest(classes = BasicApplication.class, properties = {
         "spring.shell.interactive.enabled=false"
 })
-public class DemoApplicationWebTest {
+class DemoApplicationWebTest {
 
     @Autowired
     private BasicCommands demo;

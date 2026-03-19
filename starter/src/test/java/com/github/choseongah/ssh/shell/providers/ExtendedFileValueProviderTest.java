@@ -16,26 +16,29 @@
 
 package com.github.choseongah.ssh.shell.providers;
 
+import com.github.choseongah.ssh.shell.completion.ExtendedFileCompletionProvider;
 import org.junit.jupiter.api.Test;
-import org.springframework.shell.CompletionContext;
-import org.springframework.shell.CompletionProposal;
+import org.springframework.shell.core.command.completion.CompletionContext;
+import org.springframework.shell.core.command.completion.CompletionProposal;
 
-import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class ExtendedFileValueProviderTest {
 
     @Test
     void complete() {
-        ExtendedFileValueProvider provider = new ExtendedFileValueProvider();
-        List<CompletionProposal> result = provider.complete(
-                new CompletionContext(Arrays.asList("--file", "src"), 1, 3, null, null));
+        ExtendedFileCompletionProvider provider = new ExtendedFileCompletionProvider();
+        CompletionContext completionContext = mock(CompletionContext.class);
+        when(completionContext.currentWordUpToCursor()).thenReturn("src");
+        List<CompletionProposal> result = provider.apply(completionContext);
         assertNotEquals(0, result.size());
-        result = provider.complete(
-                new CompletionContext(Arrays.asList("--file", "xxx"), 1, 3, null, null));
+        when(completionContext.currentWordUpToCursor()).thenReturn("xxx");
+        result = provider.apply(completionContext);
         assertEquals(0, result.size());
     }
 

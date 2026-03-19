@@ -16,33 +16,40 @@
 
 package com.github.choseongah.ssh.shell.commands;
 
+import com.github.choseongah.ssh.shell.SshContext;
+import com.github.choseongah.ssh.shell.SshShellCommandFactory;
 import com.github.choseongah.ssh.shell.SshShellHelper;
 import com.github.choseongah.ssh.shell.SshShellProperties;
-import com.github.choseongah.ssh.shell.postprocess.ExtendedResultHandlerService;
-import org.jline.terminal.Terminal;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class StacktraceCommandTest {
 
     @Test
-    void stacktrace() {
-        ExtendedResultHandlerService.THREAD_CONTEXT.set(null);
-
+    void stacktraceEmpty() {
         StacktraceCommand cmd = new StacktraceCommand(new SshShellHelper(null), new SshShellProperties());
-        Terminal terminal = Mockito.mock(Terminal.class);
-        Mockito.when(terminal.writer()).thenReturn(new PrintWriter(new StringWriter()));
-        cmd.setTerminal(terminal);
-        cmd.stacktrace();
-        Mockito.verify(terminal, Mockito.never()).writer();
+        SshShellCommandFactory.SSH_THREAD_CONTEXT.set(null);
+        try {
+            assertEquals("", cmd.stacktrace());
+        } finally {
+            SshShellCommandFactory.SSH_THREAD_CONTEXT.remove();
+        }
+    }
 
-        ExtendedResultHandlerService.THREAD_CONTEXT.set(new IllegalArgumentException("[TEST]"));
-
-        cmd.stacktrace();
-        Mockito.verify(terminal, Mockito.times(1)).writer();
-
+    @Test
+    void stacktraceWithLastError() {
+        StacktraceCommand cmd = new StacktraceCommand(new SshShellHelper(null), new SshShellProperties());
+        SshContext sshContext = new SshContext(null, null, null, null, null);
+        sshContext.setLastError(new IllegalArgumentException("[TEST]"));
+        SshShellCommandFactory.SSH_THREAD_CONTEXT.set(sshContext);
+        try {
+            String stacktrace = cmd.stacktrace();
+            assertTrue(stacktrace.contains("IllegalArgumentException"));
+            assertTrue(stacktrace.contains("[TEST]"));
+        } finally {
+            SshShellCommandFactory.SSH_THREAD_CONTEXT.remove();
+        }
     }
 }

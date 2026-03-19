@@ -158,7 +158,7 @@ public class SshShellRunnable implements Runnable {
         }
     }
 
-    private void runShell(LineReader reader, SshContext sshContext) throws Exception {
+    private void runShell(LineReader reader, SshContext sshContext) {
         CommandExecutor commandExecutor = new CommandExecutor(commandRegistry);
         boolean debugMode = environment.getProperty("spring.shell.debug.enabled", Boolean.class, false);
         while (true) {
@@ -322,7 +322,7 @@ public class SshShellRunnable implements Runnable {
         }
     }
 
-    private void printBanner(ByteArrayOutputStream baos, PrintStream ps, Terminal terminal) throws IOException {
+    private void printBanner(ByteArrayOutputStream baos, PrintStream ps, Terminal terminal) {
         if (properties.isDisplayBanner() && shellBanner != null) {
             shellBanner.printBanner(environment, getClass(), ps);
         }

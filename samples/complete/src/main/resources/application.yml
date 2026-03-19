@@ -68,6 +68,14 @@ info:
   app:
     name: ssh-shell-spring-boot-complete-sample
     description: Complete sample
+  build:
+    groupId: ${project.groupId}
+    artifactId: ${project.artifactId}
+    version: ${project.version}
+  dependencies:
+    spring-boot: ${spring-boot.version}
+    spring-shell: ${spring-shell.version}
+    jackson: ${jackson.version}
 
 logging:
   level:

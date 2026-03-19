@@ -25,21 +25,25 @@ import org.springframework.boot.actuate.beans.BeansEndpoint;
 import org.springframework.boot.actuate.context.ShutdownEndpoint;
 import org.springframework.boot.actuate.context.properties.ConfigurationPropertiesReportEndpoint;
 import org.springframework.boot.actuate.env.EnvironmentEndpoint;
-import org.springframework.boot.actuate.health.HealthEndpoint;
 import org.springframework.boot.actuate.info.InfoEndpoint;
 import org.springframework.boot.actuate.logging.LoggersEndpoint;
 import org.springframework.boot.actuate.management.ThreadDumpEndpoint;
-import org.springframework.boot.actuate.metrics.MetricsEndpoint;
 import org.springframework.boot.actuate.scheduling.ScheduledTasksEndpoint;
-import org.springframework.boot.actuate.session.SessionsEndpoint;
 import org.springframework.boot.actuate.web.mappings.MappingsEndpoint;
+import org.springframework.boot.health.actuate.endpoint.HealthEndpoint;
+import org.springframework.boot.micrometer.metrics.actuate.endpoint.MetricsEndpoint;
+import org.springframework.boot.session.actuate.endpoint.SessionsEndpoint;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.env.Environment;
+import org.springframework.test.context.TestPropertySource;
 
 import java.util.Collections;
 
-public abstract class AbstractTest {
+import static org.mockito.Mockito.mock;
+
+@TestPropertySource(properties = "ssh.shell.commands.actuator.enabled=true")
+abstract class AbstractTest {
 
     @Autowired
     protected ApplicationContext context;
@@ -83,7 +87,7 @@ public abstract class AbstractTest {
     @Autowired
     protected ScheduledTasksEndpoint scheduledtasks;
 
-    @Autowired
+    @Autowired(required = false)
     protected SessionsEndpoint sessions;
 
     @Autowired
@@ -94,9 +98,8 @@ public abstract class AbstractTest {
     protected ThreadDumpEndpoint threaddump;
 
     protected void setRole(String role) {
-        SshShellCommandFactory.SSH_THREAD_CONTEXT.set(new SshContext(new SshShellRunnable(properties, null, null,
-                null, null, null, null, null, null, null, null, null, null, null), null, null, new SshAuthentication(
-                "user", "user", null, null, Collections.singletonList(role))));
+        SshShellCommandFactory.SSH_THREAD_CONTEXT.set(new SshContext(mock(SshShellRunnable.class), null, null, null,
+                new SshAuthentication("user", "user", null, null, Collections.singletonList(role))));
     }
 
     protected void setActuatorRole() {

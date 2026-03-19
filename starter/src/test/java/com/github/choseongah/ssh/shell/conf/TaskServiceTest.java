@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 public class TaskServiceTest {
 
     @Scheduled(cron = "0 0 0 * * *")
-    public void test() {
+    void test() {
         // test
     }
 }

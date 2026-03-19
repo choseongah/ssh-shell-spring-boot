@@ -29,19 +29,18 @@ import static com.github.choseongah.ssh.shell.SshHelperTest.write;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
-        classes = {SshShellApplicationWebTest.class, SshShellSessionConfigurationTest.class},
+        classes = {SshShellApplicationWebTest.TestApplication.class, SshShellSessionConfigurationTest.class},
         properties = {
                 "ssh.shell.port=2346",
                 "ssh.shell.password=pass",
                 "ssh.shell.shared-history=false",
-                "ssh.shell.commands.manage-sessions.enable=true",
+                "ssh.shell.commands.manage-sessions.enabled=true",
                 "management.endpoints.web.exposure.include=*",
                 "spring.shell.interactive.enabled=false"
         }
 )
-@SpringBootApplication
 @DirtiesContext
-public class SshShellApplicationWebTest
+class SshShellApplicationWebTest
         extends AbstractCommandTest {
 
     @Test
@@ -91,5 +90,9 @@ public class SshShellApplicationWebTest
             assertTrue(manageSessionsCommand.manageSessionsStop(0L).contains("Unable to stop session"));
             assertTrue(manageSessionsCommand.manageSessionsStop(oneId).contains("stopped"));
         });
+    }
+
+    @SpringBootApplication
+    static class TestApplication {
     }
 }

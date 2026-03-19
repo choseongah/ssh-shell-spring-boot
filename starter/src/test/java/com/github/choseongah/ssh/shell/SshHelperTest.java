@@ -16,34 +16,37 @@
 
 package com.github.choseongah.ssh.shell;
 
-import com.jcraft.jsch.Channel;
+import com.jcraft.jsch.ChannelShell;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Properties;
 
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.fail;
 
-public class SshHelperTest {
+class SshHelperTest {
 
-    public static final Logger LOGGER = LoggerFactory.getLogger(SshHelperTest.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SshHelperTest.class);
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-    public static void call(SshShellProperties properties, Executor executor) {
+    static void call(SshShellProperties properties, Executor executor) {
         call(properties.getUser(), properties.getPassword(), properties.getHost(), properties.getPort(), executor);
     }
 
-    public static void call(String user, String pass, SshShellProperties properties, Executor executor) {
+    static void call(String user, String pass, SshShellProperties properties, Executor executor) {
         call(user, pass, properties.getHost(), properties.getPort(), executor);
     }
 
-    public static void call(String user, String pass, String host, int port, Executor executor) {
+    static void call(String user, String pass, String host, int port, Executor executor) {
         try {
             JSch jsch = new JSch();
             Session session = jsch.getSession(user, host, port);
@@ -52,7 +55,10 @@ public class SshHelperTest {
             config.put("StrictHostKeyChecking", "no");
             session.setConfig(config);
             session.connect();
-            Channel channel = session.openChannel("shell");
+            ChannelShell channel = (ChannelShell) session.openChannel("shell");
+            // Tests run on platforms that may not provide `infocmp`, so request a
+            // built-in dumb terminal instead of JSch's default vt100 PTY.
+            channel.setPtyType("dumb");
             try (PipedInputStream pis = new PipedInputStream();
                  PipedOutputStream pos = new PipedOutputStream()) {
                 channel.setInputStream(new PipedInputStream(pos));
@@ -70,7 +76,11 @@ public class SshHelperTest {
         }
     }
 
-    public static void verifyResponse(InputStream pis, String response) {
+    static void verifyResponse(InputStream pis, String response) {
+        verifyResponse(pis, new String[]{response});
+    }
+
+    static void verifyResponse(InputStream pis, String... responses) {
         StringBuilder sb = new StringBuilder();
         try {
             Thread.sleep(1000);
@@ -82,7 +92,7 @@ public class SshHelperTest {
                 while (true) {
                     sb.append((char) pis.read());
                     String s = sb.toString();
-                    if (s.contains(response)) {
+                    if (Arrays.stream(responses).anyMatch(s::contains)) {
                         break;
                     }
                 }
@@ -95,7 +105,13 @@ public class SshHelperTest {
         }
     }
 
-    public static void write(OutputStream os, String... input) throws IOException {
+    static void verifyJsonResponse(InputStream pis, Object response) {
+        verifyResponse(pis,
+                OBJECT_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(response),
+                OBJECT_MAPPER.writeValueAsString(response));
+    }
+
+    static void write(OutputStream os, String... input) throws IOException {
         for (String s : input) {
             os.write((s + "\r").getBytes(StandardCharsets.UTF_8));
             os.flush();
@@ -103,7 +119,7 @@ public class SshHelperTest {
     }
 
     @FunctionalInterface
-    public interface Executor {
+    interface Executor {
 
         void execute(InputStream is, OutputStream os) throws Exception;
     }

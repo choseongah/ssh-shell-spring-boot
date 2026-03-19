@@ -16,7 +16,7 @@
 
 package com.github.choseongah.ssh.shell;
 
-import com.jcraft.jsch.Channel;
+import com.jcraft.jsch.ChannelShell;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Session;
 
@@ -47,7 +47,8 @@ public class JavaConnect {
             session.connect();
             System.out.println("> Connected");
 
-            Channel channel = session.openChannel("shell");
+            ChannelShell channel = (ChannelShell) session.openChannel("shell");
+            channel.setPtyType("dumb");
 
             channel.setInputStream(new PipedInputStream(pos));
             channel.setOutputStream(new PipedOutputStream(pis));
