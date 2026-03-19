@@ -38,8 +38,8 @@ import static com.github.choseongah.ssh.shell.manage.SshShellSessionManager.sess
  */
 @SshShellComponent("sshManageSessionsCommand")
 @ConditionalOnProperty(
-        name = SshShellProperties.SSH_SHELL_PREFIX + ".commands." + ManageSessionsCommand.GROUP + ".create",
-        havingValue = "true", matchIfMissing = true
+        name = SshShellProperties.SSH_SHELL_PREFIX + ".commands." + ManageSessionsCommand.GROUP + ".enabled",
+        havingValue = "true"
 )
 public class ManageSessionsCommand extends AbstractCommand {
 

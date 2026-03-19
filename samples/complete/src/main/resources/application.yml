@@ -5,21 +5,21 @@ ssh:
     authorized-public-keys: classpath:.ssh/authorized.keys
     commands:
       actuator:
-        enable: true
+        enabled: true
       jmx:
-        enable: true
+        enabled: true
       datasource:
-        enable: true
+        enabled: true
       stacktrace:
-        enable: true
+        enabled: true
       tasks:
-        enable: true
+        enabled: true
       system:
-        enable: true
+        enabled: true
       script:
-        enable: true
+        enabled: true
       manage-sessions:
-        enable: true
+        enabled: true
     host: 0.0.0.0
     port: 10045
     shared-history: false

@@ -16,6 +16,7 @@
 
 package com.github.choseongah.ssh.shell;
 
+import com.github.choseongah.ssh.shell.commands.SshShellComponent;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
@@ -76,39 +77,53 @@ public class SshCommandRegistryAutoConfiguration {
         SshCommandFactoryBean factoryBean = new SshCommandFactoryBean(applicationContext, postProcessorService);
         Object application = applicationContext.getBeansWithAnnotation(SpringBootApplication.class)
                 .values().stream().findFirst().orElse(null);
-        if (application == null) {
-            return;
+        Set<String> registeredMethods = new LinkedHashSet<>();
+        if (application != null) {
+            Class<?> applicationClass = AopUtils.getTargetClass(application);
+            registerAnnotatedCommandsFromPackage(applicationContext, commandRegistry, factoryBean,
+                    ClassUtils.getPackageName(applicationClass), registeredMethods);
         }
 
-        Class<?> applicationClass = AopUtils.getTargetClass(application);
-        Set<String> basePackages = new LinkedHashSet<>();
-        basePackages.add(ClassUtils.getPackageName(applicationClass));
-        basePackages.add(ClassUtils.getPackageName(SshShellAutoConfiguration.class));
+        for (String beanName : applicationContext.getBeanNamesForAnnotation(SshShellComponent.class)) {
+            Class<?> beanClass = applicationContext.getType(beanName);
+            if (beanClass != null) {
+                registerAnnotatedCommandMethods(commandRegistry, factoryBean, beanClass, registeredMethods);
+            }
+        }
+    }
+
+    private void registerAnnotatedCommandsFromPackage(ApplicationContext applicationContext,
+                                                     CommandRegistry commandRegistry,
+                                                     SshCommandFactoryBean factoryBean,
+                                                     String basePackage,
+                                                     Set<String> registeredMethods) {
         ClassPathScanningCandidateComponentProvider scanner =
                 new ClassPathScanningCandidateComponentProvider(true);
-        Set<String> registeredMethods = new LinkedHashSet<>();
-        for (String basePackage : basePackages) {
-            Set<BeanDefinition> candidates = scanner.findCandidateComponents(basePackage);
-            for (BeanDefinition candidate : candidates) {
-                String beanClassName = candidate.getBeanClassName();
-                if (beanClassName == null) {
-                    continue;
-                }
-                try {
-                    Class<?> beanClass = ClassUtils.forName(beanClassName, applicationContext.getClassLoader());
-                    Map<Method, Boolean> methods = MethodIntrospector.selectMethods(beanClass,
-                            (MethodIntrospector.MetadataLookup<Boolean>) method -> AnnotatedElementUtils.hasAnnotation(
-                                    method, org.springframework.shell.core.command.annotation.Command.class)
-                                    ? Boolean.TRUE : null);
-                    for (Method method : methods.keySet()) {
-                        String methodId = method.getDeclaringClass().getName() + "#" + method.toGenericString();
-                        if (registeredMethods.add(methodId)) {
-                            commandRegistry.registerCommand(factoryBean.getObject(method));
-                        }
-                    }
-                } catch (ClassNotFoundException e) {
-                    throw new IllegalStateException("Unable to load command class " + beanClassName, e);
-                }
+        Set<BeanDefinition> candidates = scanner.findCandidateComponents(basePackage);
+        for (BeanDefinition candidate : candidates) {
+            String beanClassName = candidate.getBeanClassName();
+            if (beanClassName == null) {
+                continue;
+            }
+            try {
+                Class<?> beanClass = ClassUtils.forName(beanClassName, applicationContext.getClassLoader());
+                registerAnnotatedCommandMethods(commandRegistry, factoryBean, beanClass, registeredMethods);
+            } catch (ClassNotFoundException e) {
+                throw new IllegalStateException("Unable to load command class " + beanClassName, e);
+            }
+        }
+    }
+
+    private void registerAnnotatedCommandMethods(CommandRegistry commandRegistry, SshCommandFactoryBean factoryBean,
+                                                 Class<?> beanClass, Set<String> registeredMethods) {
+        Map<Method, Boolean> methods = MethodIntrospector.selectMethods(beanClass,
+                (MethodIntrospector.MetadataLookup<Boolean>) method -> AnnotatedElementUtils.hasAnnotation(
+                        method, org.springframework.shell.core.command.annotation.Command.class)
+                        ? Boolean.TRUE : null);
+        for (Method method : methods.keySet()) {
+            String methodId = method.getDeclaringClass().getName() + "#" + method.toGenericString();
+            if (registeredMethods.add(methodId)) {
+                commandRegistry.registerCommand(factoryBean.getObject(method));
             }
         }
     }

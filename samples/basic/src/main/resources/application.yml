@@ -9,21 +9,21 @@ ssh:
     password: password
     commands:
       actuator:
-        create: false
+        enabled: false
       jmx:
-        create: false
+        enabled: false
       datasource:
-        create: false
+        enabled: false
       stacktrace:
-        create: false
+        enabled: false
       tasks:
-        create: false
+        enabled: false
       system:
-        create: false
+        enabled: false
       script:
-        create: false
+        enabled: false
       manage-sessions:
-        create: false
+        enabled: false
 
 logging:
   level:

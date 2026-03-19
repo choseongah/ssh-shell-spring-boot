@@ -64,8 +64,8 @@ import static org.springframework.scheduling.annotation.ScheduledAnnotationBeanP
 @SshShellComponent("sshTasksCommand")
 @ConditionalOnBean(ScheduledTaskHolder.class)
 @ConditionalOnProperty(
-        name = SshShellProperties.SSH_SHELL_PREFIX + ".commands." + TasksCommand.GROUP + ".create",
-        havingValue = "true", matchIfMissing = true
+        name = SshShellProperties.SSH_SHELL_PREFIX + ".commands." + TasksCommand.GROUP + ".enabled",
+        havingValue = "true"
 )
 public class TasksCommand extends AbstractCommand implements DisposableBean {
 

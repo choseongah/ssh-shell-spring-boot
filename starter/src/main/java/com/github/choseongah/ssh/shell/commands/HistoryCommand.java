@@ -35,8 +35,8 @@ import java.util.List;
  */
 @SshShellComponent("sshHistoryCommand")
 @ConditionalOnProperty(
-        name = SshShellProperties.SSH_SHELL_PREFIX + ".commands." + HistoryCommand.GROUP + ".create",
-        havingValue = "true", matchIfMissing = true
+        name = SshShellProperties.SSH_SHELL_PREFIX + ".commands." + HistoryCommand.GROUP + ".enabled",
+        havingValue = "true"
 )
 public class HistoryCommand extends AbstractCommand {
 

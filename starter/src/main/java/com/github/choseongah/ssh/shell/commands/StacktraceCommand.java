@@ -31,8 +31,8 @@ import java.io.StringWriter;
  */
 @SshShellComponent("sshStacktraceCommand")
 @ConditionalOnProperty(
-        name = SshShellProperties.SSH_SHELL_PREFIX + ".commands." + StacktraceCommand.GROUP + ".create",
-        havingValue = "true", matchIfMissing = true
+        name = SshShellProperties.SSH_SHELL_PREFIX + ".commands." + StacktraceCommand.GROUP + ".enabled",
+        havingValue = "true"
 )
 public class StacktraceCommand extends AbstractCommand {
 

@@ -57,8 +57,8 @@ import java.util.Map;
 @SshShellComponent("sshActuatorCommand")
 @ConditionalOnClass(Endpoint.class)
 @ConditionalOnProperty(
-        name = SshShellProperties.SSH_SHELL_PREFIX + ".commands." + ActuatorCommand.GROUP + ".create",
-        havingValue = "true", matchIfMissing = true
+        name = SshShellProperties.SSH_SHELL_PREFIX + ".commands." + ActuatorCommand.GROUP + ".enabled",
+        havingValue = "true"
 )
 public class ActuatorCommand extends AbstractCommand {
 

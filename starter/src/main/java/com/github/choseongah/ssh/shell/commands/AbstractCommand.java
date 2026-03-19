@@ -53,9 +53,9 @@ public class AbstractCommand {
     protected Availability availability(String commandGroup, String commandName) {
         try {
             preAvailability();
-            if (!commandProperties.isEnable()) {
+            if (!commandProperties.isEnabled()) {
                 return Availability.unavailable("command deactivated (please check property '"
-                        + SshShellProperties.SSH_SHELL_PREFIX + ".commands." + commandGroup + ".enable" + "')");
+                        + SshShellProperties.SSH_SHELL_PREFIX + ".commands." + commandGroup + ".enabled" + "')");
             }
             if (commandProperties.getExcludes() != null && commandProperties.getExcludes().contains(commandName)) {
                 return Availability.unavailable("command is excluded (please check property '"

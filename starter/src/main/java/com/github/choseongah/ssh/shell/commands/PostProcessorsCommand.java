@@ -35,8 +35,8 @@ import java.util.List;
  */
 @SshShellComponent("sshPostProcessorsCommand")
 @ConditionalOnProperty(
-        name = SshShellProperties.SSH_SHELL_PREFIX + ".commands." + PostProcessorsCommand.GROUP + ".create",
-        havingValue = "true", matchIfMissing = true
+        name = SshShellProperties.SSH_SHELL_PREFIX + ".commands." + PostProcessorsCommand.GROUP + ".enabled",
+        havingValue = "true"
 )
 public class PostProcessorsCommand extends AbstractCommand {
 

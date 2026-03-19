@@ -59,8 +59,8 @@ import static com.github.choseongah.ssh.shell.SshShellHelper.at;
  */
 @SshShellComponent("sshSystemCommand")
 @ConditionalOnProperty(
-        name = SshShellProperties.SSH_SHELL_PREFIX + ".commands." + SystemCommand.GROUP + ".create",
-        havingValue = "true", matchIfMissing = true
+        name = SshShellProperties.SSH_SHELL_PREFIX + ".commands." + SystemCommand.GROUP + ".enabled",
+        havingValue = "true"
 )
 public class SystemCommand extends AbstractCommand {
 
