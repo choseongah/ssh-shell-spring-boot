@@ -35,8 +35,8 @@ import java.io.File;
  */
 @SshShellComponent("sshScriptCommand")
 @ConditionalOnProperty(
-        name = SshShellProperties.SSH_SHELL_PREFIX + ".commands." + ScriptCommand.GROUP + ".create",
-        havingValue = "true", matchIfMissing = true
+        name = SshShellProperties.SSH_SHELL_PREFIX + ".commands." + ScriptCommand.GROUP + ".enabled",
+        havingValue = "true"
 )
 public class ScriptCommand extends AbstractCommand {
 

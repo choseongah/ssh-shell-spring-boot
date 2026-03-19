@@ -1,19 +1,29 @@
 # Spring Boot Ssh Shell
 
-> [!CAUTION]
-> As you may have seen, it's been a while since this repository has been active, so I am deciding to archive it. You are welcome to fork it and make this library live if you still need it !
-
-[![Build Status](https://github.com/fonimus/ssh-shell-spring-boot/actions/workflows/build.yml/badge.svg)](https://github.com/fonimus/ssh-shell-spring-boot/actions/workflows/build.yml)
-[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=fonimus_ssh-shell-spring-boot&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=fonimus_ssh-shell-spring-boot)
-[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=fonimus_ssh-shell-spring-boot&metric=coverage)](https://sonarcloud.io/dashboard?id=fonimus_ssh-shell-spring-boot)
+[![Build Status](https://github.com/choseongah/ssh-shell-spring-boot/actions/workflows/build.yml/badge.svg)](https://github.com/choseongah/ssh-shell-spring-boot/actions/workflows/build.yml)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=choseongah_ssh-shell-spring-boot&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=choseongah_ssh-shell-spring-boot)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=choseongah_ssh-shell-spring-boot&metric=coverage)](https://sonarcloud.io/dashboard?id=choseongah_ssh-shell-spring-boot)
 [![Maven Central](https://img.shields.io/maven-central/v/com.github.choseongah/ssh-shell-spring-boot-starter.svg?label=maven%20central)](https://search.maven.org/search?q=g:%22com.github.choseongah%22%20AND%20a:%22ssh-shell-spring-boot-starter%22)
+
+> Maintained fork of François Onimus's original repository:
+> [fonimus/ssh-shell-spring-boot](https://github.com/fonimus/ssh-shell-spring-boot)
+
+Current maintained line:
+
+* Java 17
+* Spring Boot 4.0.3
+* Spring Shell 4.0.1
+* Jackson 3.1.0
+
+---
 
 > Spring shell in spring boot application over ssh
 
 For more information please
-visit `spring shell` [website](https://docs.spring.io/spring-shell/docs/3.0.3/docs/index.html).
+visit `spring shell` [website](https://docs.spring.io/spring-shell/reference/4.0.1).
 
 * [Getting started](#getting-started)
+* [Configuration](#configuration)
 * [Commands](#commands)
 * [Post processors](#post-processors)
 * [Parameter providers](#parameter-providers)
@@ -31,15 +41,13 @@ visit `spring shell` [website](https://docs.spring.io/spring-shell/docs/3.0.3/do
 ### Dependency
 
 ```xml
-
 <dependency>
     <groupId>com.github.choseongah</groupId>
     <artifactId>ssh-shell-spring-boot-starter</artifactId>
 </dependency>
 ```
 
-_Warning :_ since version 2.0.0 (spring shell 2.1.0) interactive shell is
-enabled by default.
+_Warning:_ interactive shell is enabled by default.
 You can set property `spring.shell.interactive.enabled=false` to disable it.
 
 > **Note:** auto configuration `SshShellAutoConfiguration` (active by default)
@@ -47,219 +55,334 @@ You can set property `spring.shell.interactive.enabled=false` to disable it.
 > **ssh.shell.enable=false**.
 
 It means that the ssh server won't start and the commands won't be scanned.
-Unfortunately the application will still
-load the `spring-shell` auto configuration classes and display a shell at
-startup (shell:>). You can disable them with
-following property:
+If you only want to use the application through SSH, you should usually also
+disable the local interactive shell with the following property:
 
 ```yaml
 spring:
-  autoconfigure:
-    exclude:
-      - org.springframework.shell.boot.ExitCodeAutoConfiguration
-      - org.springframework.shell.boot.ShellContextAutoConfiguration
-      - org.springframework.shell.boot.SpringShellAutoConfiguration
-      - org.springframework.shell.boot.ShellRunnerAutoConfiguration
-      - org.springframework.shell.boot.ApplicationRunnerAutoConfiguration
-      - org.springframework.shell.boot.CommandCatalogAutoConfiguration
-      - org.springframework.shell.boot.LineReaderAutoConfiguration
-      - org.springframework.shell.boot.CompleterAutoConfiguration
-      - org.springframework.shell.boot.UserConfigAutoConfiguration
-      - org.springframework.shell.boot.JLineAutoConfiguration
-      - org.springframework.shell.boot.JLineShellAutoConfiguration
-      - org.springframework.shell.boot.ParameterResolverAutoConfiguration
-      - org.springframework.shell.boot.StandardAPIAutoConfiguration
-      - org.springframework.shell.boot.ThemingAutoConfiguration
-      - org.springframework.shell.boot.StandardCommandsAutoConfiguration
-      - org.springframework.shell.boot.ComponentFlowAutoConfiguration  
-```  
+  shell:
+    interactive:
+      enabled: false
+```
 
 ### Configuration
 
 Please check
-class: [SshShellProperties.java](./starter/src/main/java/com/github/fonimus/ssh/shell/SshShellProperties.java)
+class: [SshShellProperties.java](./starter/src/main/java/com/github/choseongah/ssh/shell/SshShellProperties.java)
 for more
-information
+information.
 
 ```yaml
 ssh:
   shell:
     enable: true
+    host: 127.0.0.1
+    port: 2222
+    user: user
+    # displayed in log if generated
+    password:
+    display-banner: true
     # 'simple' or 'security'
     authentication: simple
-    # if authentication set to 'security' the AuthenticationProvider bean name
-    # if not specified and only one AuthenticationProvider bean is present in the context, it will be used 
+    # if authentication is set to 'security', the AuthenticationManager bean name
+    # if not specified and only one AuthenticationManager bean is present in the context, it will be used
     auth-provider-bean-name:
+    host-key-file: <java.io.tmpdir>/hostKey.ser
     # since 1.2.2, optional file containing authorized public keys (standard authorized_keys format, one key per line
-    # starting with 'ssh-rsa'), takes precedence over authentication (simple or not)
+    # starting with 'ssh-rsa'), takes precedence over authentication (simple or security)
     authorized-public-keys-file:
-    # since 1.5.5, optional spring resource containing authorized public keys (file:, classpath: , etc)
-    # note: in case of a non file resource, a temporary file is created with given content and deleted on process exit
-    # this is due to ssh external library which only accepts file in api
+    # optional spring resource containing authorized public keys (file:, classpath:, etc)
+    # note: in case of a non file resource, a temporary file can be created depending on resource type
+    # this takes precedence over authentication (simple or security)
     authorized-public-keys:
+    history-file: <java.io.tmpdir>/sshShellHistory.log
+    # set to false have one file per user (<history-directory>/sshShellHistory-<user>.log)
+    shared-history: true
+    # only used if shared-history is set to false
+    history-directory: <java.io.tmpdir>
     # for ssh helper 'confirm' method
     confirmation-words:
       - y
       - yes
-    # since 1.4.0, set enable to false to disable following default commands
+    prompt:
+      # in enum: com.github.choseongah.ssh.shell.PromptColor (black, red, green, yellow, blue, magenta, cyan, white, bright)
+      color: white
+      text: 'shell>'
     commands:
+      # all starter command groups are disabled by default in the Spring Shell 4 line
       actuator:
-        create: true
-        enable: true
+        enabled: false
         restricted: true
+        # empty by default
+        includes:
+          - ...
         # empty by default
         excludes:
           - ...
         authorized-roles:
           - ACTUATOR
-      # since 1.4.0
-      jmx:
-        create: true
-        enable: true
+      datasource:
+        enabled: false
         restricted: true
+        # empty by default
+        includes:
+          - ...
+        # datasource-update is excluded by default
+        excludes:
+          - datasource-update
+        authorized-roles:
+          - ADMIN
+      history:
+        enabled: false
+        restricted: true
+        # empty by default
+        includes:
+          - ...
+        # empty by default
+        excludes:
+          - ...
+        authorized-roles:
+          - ADMIN
+      jmx:
+        enabled: false
+        restricted: true
+        # empty by default
+        includes:
+          - ...
+        # empty by default
+        excludes:
+          - ...
+        authorized-roles:
+          - ADMIN
+      manage-sessions:
+        enabled: false
+        restricted: true
+        # empty by default
+        includes:
+          - ...
+        # empty by default
+        excludes:
+          - ...
+        authorized-roles:
+          - ADMIN
+      postprocessors:
+        enabled: false
+        restricted: false
+        # empty by default
+        includes:
+          - ...
+        # empty by default
+        excludes:
+          - ...
+        # not used if restricted is false
+        authorized-roles:
+          - ...
+      script:
+        enabled: false
+        restricted: true
+        # empty by default
+        includes:
+          - ...
+        # empty by default
+        excludes:
+          - ...
+        authorized-roles:
+          - ADMIN
+      stacktrace:
+        enabled: false
+        restricted: true
+        # empty by default
+        includes:
+          - ...
+        # empty by default
+        excludes:
+          - ...
         authorized-roles:
           - ADMIN
       system:
-        create: true
-        enable: true
+        enabled: false
         restricted: true
-        authorized-roles:
-          - ADMIN
-      # since 1.4.0
-      datasource:
-        create: true
-        enable: true
-        restricted: true
-        authorized-roles:
-          - ADMIN
+        # empty by default
+        includes:
+          - ...
+        # empty by default
         excludes:
-          - datasource-update
-      postprocessors:
-        create: true
-        enable: true
-        restricted: false
-      # history and script added in 1.8.0
-      history:
-        create: true
-        enable: true
-        restricted: false
-      script:
-        create: true
-        enable: true
-        restricted: false
-      # since 1.3.0, command which allows you to list ssh sessions, and stop them
-      manage-sessions:
-        create: true
-        enable: false
-        restricted: true
+          - ...
         authorized-roles:
           - ADMIN
-      # since 1.5.0
       tasks:
-        create: true
-        enable: false
+        enabled: false
         restricted: true
+        # empty by default
+        includes:
+          - ...
+        # empty by default
+        excludes:
+          - ...
         authorized-roles:
           - ADMIN
-    display-banner: true
-    history-file: <java.io.tmpdir>/sshShellHistory.log
-    # since 1.3.0, set to false to have one file per user (<history-directory>/sshShellHistory-<user>.log)
-    shared-history: true
-    # since 1.3.0, only if shared-history is set to false
-    history-directory: <java.io.tmpdir>
-    host: 127.0.0.1
-    host-key-file: <java.io.tmpdir>/hostKey.ser
-    # displayed in log if generated
-    password:
-    port: 2222
-    user: user
-    prompt:
-      # in enum: com.github.choseongah.ssh.shell.PromptColor (black, red, green, yellow, blue, magenta, cyan, white, bright)
-      color: white
-      text: 'shell>'
 ```
 
 * Add `spring-boot-starter-actuator` dependency to get actuator commands
 
 * Add `spring-boot-starter-security` dependency to
-  configure `ssh.shell.authentication=security` with *
-  AuthenticationProvider*
+  configure `ssh.shell.authentication=security` with
+  `AuthenticationManager`
+
+* Role based restrictions are meaningful with `ssh.shell.authentication=security`
+  because the default `simple` authentication does not attach authorities
+
+#### Recommended settings
+
+For a typical SSH only application, the following setup is the recommended
+baseline:
+
+```yaml
+spring:
+  shell:
+    interactive:
+      enabled: false
+
+ssh:
+  shell:
+    authentication: security
+    commands:
+      actuator:
+        enabled: true
+      history:
+        enabled: true
+      script:
+        enabled: true
+      stacktrace:
+        enabled: true
+```
+
+Recommended usage rules:
+
+* Set `spring.shell.interactive.enabled=false` if the application is meant to
+  be used through SSH only
+* Prefer `ssh.shell.authentication=security` if you use restricted commands or
+  `authorized-roles`
+* Enable starter command groups explicitly with `ssh.shell.commands.<group>.enabled=true`
+* Use `authorized-public-keys` or `authorized-public-keys-file` if public key
+  authentication is preferred over password authentication
+* Use `shared-history=false` with `history-directory` if you want one history
+  file per SSH user
+
+#### Supported settings with caveats
+
+The following settings are supported, but need some context:
+
+* `ssh.shell.authentication=simple` is supported, but restricted commands are
+  effectively allowed for authenticated SSH users because no authorities are
+  attached in simple mode.
+* `ssh.shell.commands.<group>.restricted` and `authorized-roles` are meaningful
+  for SSH sessions with Spring Security authorities; local prompt execution
+  still bypasses authority checks.
+* `management.endpoints.access.*` and `management.endpoint.<id>.access` are
+  supported and recommended for actuator commands, but current implementation
+  still also checks legacy `management.endpoint.<id>.enabled`.
+* `ssh.shell.commands.actuator.restricted` is supported, but `info` is
+  intentionally still available even when the rest of the actuator group is
+  forbidden for the current SSH user.
+* `authorized-public-keys` supports Spring `Resource` values such as `file:`
+  and `classpath:`; for non-file resources the content is copied to a temporary
+  file because sshd requires a file based authorized keys source.
+* `ssh.shell.enable=false` disables this starter, but it is not a substitute
+  for `spring.shell.interactive.enabled=false`.
 
 #### Default behavior
 
-Some commands are disabled by default, it can be the whole group (
-like `manage-sessions`), or just
-one sub command (like `datasource-update` in group `datasource`).
+All starter command groups are disabled by default.
 
-To enable a group, set the **enable** property to true :
+To enable a group, set the **enabled** property to true:
 
 ```yaml
 ssh:
   shell:
     commands:
       manage-sessions:
-        enable: true
-      datasource:
-        excludes:
+        enabled: true
 ```
 
-To un-exclude a sub command inside a group, set the **excludes** property to the
-new wanted
-array. To include all sub commands, set new empty array :
+If `enabled=false`, the command group bean is not created, the commands are not
+registered, and they do not appear in `help`.
+
+Sub commands in a group can be filtered by `includes` and `excludes`
+properties:
 
 ```yaml
 ssh:
   shell:
     commands:
       datasource:
+        includes:
+          - datasource-list
+          - datasource-properties
+        excludes:
+          - datasource-update
+```
+
+To include all sub commands, set `excludes` to an empty array:
+
+```yaml
+ssh:
+  shell:
+    commands:
+      datasource:
+        enabled: true
         excludes:
 ```
 
 ### Writing commands
 
-You can write your command exactly the way you would do with `spring shell` (For
-more information please
-visit `spring shell` [website](https://docs.spring.io/spring-shell/docs/3.0.3/docs/index.html).
+You can write your command exactly the way you would do with `spring shell`.
+For more information please
+visit `spring shell` [website](https://docs.spring.io/spring-shell/reference/).
 
-Instead of using `org.springframework.shell.standard.ShellComponent` annotation,
-you should
-use `com.github.choseongah.ssh.shell.commands.SshShellComponent`:
-it is just a conditional `@ShellComponent` with `@ConditionalOnProperty` on
-property **ssh.shell.enable**
+Instead of using a regular `@Component`, you can use
+`com.github.choseongah.ssh.shell.commands.SshShellComponent`:
+it is just a conditional `@Component` with `@ConditionalOnProperty` on
+property **ssh.shell.enable**.
+
+Commands themselves are declared with Spring Shell 4 annotations such as
+`@Command`, `@Argument` and `@Option`.
 
 Example:
 
 ```java
-import org.springframework.shell.standard.ShellCommandGroup;
-import org.springframework.shell.standard.ShellMethod;
-
 import com.github.choseongah.ssh.shell.commands.SshShellComponent;
-
+import org.springframework.shell.core.command.annotation.Argument;
+import org.springframework.shell.core.command.annotation.Command;
+import org.springframework.shell.core.command.annotation.Option;
 
 @SshShellComponent
-@ShellCommandGroup("Test Commands")
 public class TestCommands {
 
-    @ShellMethod("test command")
-    public String test() {
-        return "ok";
+    @Command(name = "test", group = "Test Commands", description = "test command")
+    public String test(
+            @Argument(index = 0, defaultValue = "world") String message,
+            @Option(longName = "uppercase", defaultValue = "false") boolean uppercase
+    ) {
+        return uppercase ? message.toUpperCase() : message;
     }
 }
-``` 
+```
 
 ## Commands
 
-All commands group can be deactivated by enable property :
+All command groups can be activated or deactivated by `enabled` property:
 
 ```yaml
 ssh:
   shell:
     commands:
       <command>:
-        enable: true
+        enabled: true
 ```
 
-Sub commands in group can be also filtered by includes and excludes properties :
+Sub commands in group can also be filtered by `includes` and `excludes`
+properties:
 
 ```yaml
 ssh:
@@ -275,59 +398,103 @@ ssh:
 ### Actuator
 
 If `org.springframework.boot:spring-boot-starter-actuator` dependency is
-present, actuator commands
-will be available.
+present and `ssh.shell.commands.actuator.enabled=true`,
+actuator commands can be available.
 
-Command availability is also bind to endpoint activation.
+Command availability is bound to endpoint access and bean presence.
+
+For Spring Boot 4, actuator access is based on `management.endpoints.access`
+and endpoint specific `access` properties.
+
+Current implementation also still checks `management.endpoint.<id>.enabled`
+in addition to the Spring Boot 4 `access` properties.
+
+Example:
 
 ```yaml
 management:
+  endpoints:
+    access:
+      default: unrestricted
+    web:
+      exposure:
+        include: "*"
+    jmx:
+      exposure:
+        include: "*"
   endpoint:
-    audit:
-      enabled: false
+    shutdown:
+      access: unrestricted
+    heapdump:
+      access: unrestricted
 ```
+
+Some endpoints also require extra beans or dependencies to exist in the
+application context, for example `audit`, `httpexchanges`, `sessions`,
+`prometheus`, `flyway`, `liquibase`, or `quartz`.
+
+Also note that `info` is intentionally left available even when the rest of the
+actuator command group is restricted for the current SSH user.
+
+Available actuator commands in this starter are:
+
+* `audit`
+* `beans`
+* `conditions`
+* `configprops`
+* `env`
+* `health`
+* `httpexchanges`
+* `info`
+* `loggers`
+* `metrics`
+* `mappings`
+* `scheduledtasks`
+* `sessions`
+* `shutdown`
+* `threaddump`
 
 ### Tasks
 
-Activated by default if you have ``@EnableScheduling``,
-these commands allow you to interact with spring boot scheduled tasks :
+If you have `@EnableScheduling`,
+these commands allow you to interact with spring boot scheduled tasks:
 
-* `tasks-list` : List scheduled tasks
-* `tasks-stop` : Stop one or all scheduled tasks or execution
-* `tasks-restart` : Restart one or all scheduled tasks
-* `tasks-single` : Launch one execution of all or specified task(s)
+* `tasks-list`: Display the available scheduled tasks
+* `tasks-stop`: Stop all or specified task(s)
+* `tasks-restart`: Restart all or specified task(s)
+* `tasks-single`: Launch one execution of all or specified task(s)
 
 Note: refresh parameter in `tasks-list` will remove single executions.
 
 #### Task scheduler
 
 Based on spring
-documentation ``org.springframework.scheduling.annotation.ScheduledAnnotationBeanPostProcessor.setScheduler``
-the task scheduler used for scheduled tasks will be :
+documentation `org.springframework.scheduling.annotation.ScheduledAnnotationBeanPostProcessor.setScheduler`
+the task scheduler used for scheduled tasks will be:
 
-If not specified, it will look for unique bean of type ``TaskScheduler``, or
+If not specified, it will look for unique bean of type `TaskScheduler`, or
 with name
-``taskScheduler``. Otherwise, a local single-threaded will be created.
+`taskScheduler`. Otherwise, a local single-threaded one will be created.
 
-The ``TasksCommand`` keep the same mechanism in order to be able to restart
+The `TasksCommand` keeps the same mechanism in order to be able to restart
 stopped scheduled tasks.
-It also provides a ``setTaskScheduler()`` in case you want to specify custom
+It also provides a `setTaskScheduler()` in case you want to specify a custom
 one.
 
 ##### Examples
 
-| Context                                                                                                                                                    | Task scheduler used in TaskCommand                            |
-|------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------|
-| No ``TaskScheduler`` bean in context                                                                                                                       | Local single-threaded                                         |
-| One ``TaskScheduler`` bean named **ts** in context                                                                                                         | **ts** bean                                                   |                                               |
-| Multiple ``TaskScheduler`` beans named **ts1**, **ts2** in context                                                                                         | Local single-threaded (could not find name **taskScheduler**) |                                               |
-| Multiple ``TaskScheduler`` beans named **taskScheduler**, **ts2**, **ts3** in context                                                                      | **taskScheduler** bean                                        |                                               |
-| Task scheduler specified in method ``SchedulingConfigurer#configureTasks``                                                                                 | Local single-threaded (not set in task)                       |
-| Task scheduler specified in method ``SchedulingConfigurer#configureTasks`` **AND** ``com.github.choseongah.ssh.shell.commands.TasksCommand.setTaskScheduler`` | Scheduler manually set                                        |
+| Context                                                                                                                                                     | Task scheduler used in TasksCommand                           |
+|-------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------|
+| No `TaskScheduler` bean in context                                                                                                                          | Local single-threaded                                         |
+| One `TaskScheduler` bean named **ts** in context                                                                                                            | **ts** bean                                                   |
+| Multiple `TaskScheduler` beans named **ts1**, **ts2** in context                                                                                            | Local single-threaded (could not find name **taskScheduler**) |
+| Multiple `TaskScheduler` beans named **taskScheduler**, **ts2**, **ts3** in context                                                                        | **taskScheduler** bean                                        |
+| Task scheduler specified in method `SchedulingConfigurer#configureTasks`                                                                                    | Local single-threaded (not set in task)                       |
+| Task scheduler specified in method `SchedulingConfigurer#configureTasks` **AND** `com.github.choseongah.ssh.shell.commands.TasksCommand.setTaskScheduler` | Scheduler manually set                                        |
 
 ### Jmx
 
-* `jmx-info`: Displays information about jmx mbean. Use -a option to query
+* `jmx-info`: Displays information about jmx mbean. Use `--all-attributes-values` option to query
   attribute values.
 * `jmx-invoke`: Invoke operation on object name.
 * `jmx-list`: List jmx mbeans.
@@ -346,6 +513,18 @@ one.
 * `datasource-query`: Datasource query command.
 * `datasource-update`: Datasource update command.
 
+### History
+
+* `history`: Display or save previously run commands
+
+### Script
+
+* `script`: Execute commands from a script file
+
+### Stacktrace
+
+* `stacktrace`: Display the full stacktrace of the last error
+
 ### Postprocessors
 
 * `postprocessors`: Display the available post processors
@@ -354,7 +533,7 @@ one.
 
 > **Note: since 1.0.6**
 
-Post processors can be used with '|' (pipe character) followed by the name of
+Post processors can be used with `|` (pipe character) followed by the name of
 the post processor and the parameters.
 Also, custom ones can be added.
 
@@ -362,57 +541,57 @@ Also, custom ones can be added.
 
 #### Save
 
-This specific post processor takes the key character '>'.
+This specific post processor takes the key character `>`.
 
-Example: ```echo test > /path/to/file.txt```
+Example: `echo test > /path/to/file.txt`
 
 #### Pretty
 
-This post processor, named `pretty` takes an object and apply jackson pretty
+This post processor, named `pretty` takes an object and applies jackson pretty
 writer.
 
-Example: ```info | pretty```
+Example: `info | pretty`
 
 #### Json
 
 This post processor, named `json` allows you to find a specific path within a
-json object.
+JSON object.
 
-Caution: you need to have a json string. You can apply `pretty` post processor
+Caution: you need to have a JSON string. You can apply `pretty` post processor
 before to do so.
 
-Example: ```info | pretty | json /build/version```
+Example: `info | pretty | json /build/version`
 
 #### Grep
 
 This post processor, named `grep` allows you to find specific patterns within a
 string.
 
-Examples: ```info | grep boot```,```info | pretty | grep boot spring```
+Examples: `info | grep boot`, `info | pretty | grep boot spring`
 
 #### Highlight
 
 This post processor, named `highlight` allows you to highlight specific patterns
-within a string.
+within a
+string.
 
-Examples: ```info | highlight boot```,```info | pretty | highlight boot spring```
+Examples: `info | highlight boot`, `info | pretty | highlight boot spring`
 
 ### Custom
 
-To register a new json result post processor, you need to implement
-interface `PostProcessor`
+To register a new JSON result post processor, you need to implement
+interface `PostProcessor`.
 
 Then register it within a spring configuration.
 
 Example:
 
-````java
-
+```java
 @Configuration
 class PostProcessorConfiguration {
     @Bean
-    public PostProcessor quotePostProcessor() {
-        return new PostProcessor<String>() {
+    public PostProcessor<String, String> quotePostProcessor() {
+        return new PostProcessor<>() {
 
             @Override
             public String getName() {
@@ -420,54 +599,61 @@ class PostProcessorConfiguration {
             }
 
             @Override
-            public String process(String result, List parameters) {
-                return "'" + result + "'";
+            public String getDescription() {
+                return "Add quotes";
+            }
+
+            @Override
+            public String process(String input, List<String> parameters) {
+                return "'" + input + "'";
             }
         };
     }
 }
-````
+```
 
 ## Parameter providers
 
 ### Enum
 
-Enumeration option parameters have auto completion by default.
+Enumeration option parameters have auto-completion by default.
 
 ### File
 
-Thanks to [ExtendedFileValueProvider.java](
-./starter/src/main/java/com/github/fonimus/ssh/shell/providers
-/ExtendedFileValueProvider.java)
-(or FileValueProvider is deactivated), auto completion is available
-for `java.io.File` option parameters.
+Thanks to [ExtendedFileCompletionProvider.java](./starter/src/main/java/com/github/choseongah/ssh/shell/completion/ExtendedFileCompletionProvider.java),
+auto-completion is available
+for `java.io.File` parameters and behaves correctly on Windows paths.
 
 ### Custom values
 
-To enable auto completion for a parameter, declare a **valueProvider** class.
+To enable auto-completion for a command, declare a `CompletionProvider` bean
+and reference it from the command.
 
-> **Note:** the value provider has to be in the spring context.
+> **Note:** the completion provider has to be in the spring context.
 
-````java
+```java
+@SshShellComponent
 class Commands {
-    public command(@ShellOption(valueProvider = CustomValuesProvider.class) String message) {
-        // deal with message
+
+    @Command(name = "echo", completionProvider = "customValuesProvider")
+    public String command(@Argument(index = 0) String message) {
+        return message;
     }
 }
 
-@Component
-class CustomValuesProvider implements ValueProvider {
+@Component("customValuesProvider")
+class CustomValuesProvider implements CompletionProvider {
 
-    private final static String[] VALUES = new String[]{
+    private static final String[] VALUES = new String[]{
             "message1", "message2", "message3"
     };
 
     @Override
-    public List<CompletionProposal> complete(CompletionContext completionContext) {
-        return Arrays.stream(VALUES).map(CompletionProposal::new).collect(Collectors.toList());
+    public List<CompletionProposal> apply(CompletionContext completionContext) {
+        return Arrays.stream(VALUES).map(CompletionProposal::new).toList();
     }
 }
-````
+```
 
 ## Custom authentication
 
@@ -481,7 +667,7 @@ existing one in the spring context.
 Example:
 
 ```java
-import com.github.choseongah.ssh.shell.SshShellAuthenticationProvider;
+import com.github.choseongah.ssh.shell.auth.SshShellAuthenticationProvider;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -493,9 +679,13 @@ public class CustomPasswordConfiguration {
     public SshShellAuthenticationProvider sshShellAuthenticationProvider() {
         return (user, pass, serverSession) -> user.equals(pass);
     }
-
 }
 ```
+
+If you prefer to rely on Spring Security, set
+`ssh.shell.authentication=security`.
+In that mode this starter looks for an `AuthenticationManager` bean.
+If more than one is present, set `ssh.shell.auth-provider-bean-name`.
 
 ## Command helper
 
@@ -506,6 +696,7 @@ You can either autowire it or inject it in a constructor:
 
 ```java
 import com.github.choseongah.ssh.shell.SshShellHelper;
+import com.github.choseongah.ssh.shell.commands.SshShellComponent;
 
 @SshShellComponent
 public class DemoCommand {
@@ -526,20 +717,20 @@ public class DemoCommand {
 #### Print output
 
 ```java
-
 @SshShellComponent
 public class DemoCommand {
 
     @Autowired
     private SshShellHelper helper;
 
-    @ShellMethod("Print command")
+    @Command(name = "print", description = "Print command")
     public String print() {
         boolean success = true;
         helper.print("Some message");
         helper.print("Some black message", PromptColor.BLACK);
         helper.printSuccess("Some success message");
-        return success ? helper.getSuccess("Some returned success message") : helper.getColored("Some returned blue message", PromptColor.BLUE);
+        return success ? helper.getSuccess("Some returned success message")
+                : helper.getColored("Some returned blue message", PromptColor.BLUE);
     }
 }
 ```
@@ -547,14 +738,13 @@ public class DemoCommand {
 #### Read input
 
 ```java
-
 @SshShellComponent
 public class DemoCommand {
 
     @Autowired
     private SshShellHelper helper;
 
-    @ShellMethod("Welcome command")
+    @Command(name = "welcome", description = "Welcome command")
     public String welcome() {
         String name = helper.read("What's your name ?");
         return "Hello, '" + name + "' !";
@@ -569,17 +759,16 @@ if response equals ignore case confirmation words.
 
 Default confirmation words are **[`y`, `yes`]**:
 
-You can specify if it is case sensitive and provide your own confirmation words.
+You can specify if it is case-sensitive and provide your own confirmation words.
 
 ```java
-
 @SshShellComponent
 public class DemoCommand {
 
     @Autowired
     private SshShellHelper helper;
 
-    @ShellMethod("Confirmation command")
+    @Command(name = "conf", description = "Confirmation command")
     public String conf() {
         return helper.confirm("Are you sure ?") ? "Great ! Let's do it !" : "Such a shame ...";
     }
@@ -588,15 +777,15 @@ public class DemoCommand {
 
 #### Table
 
-A builder `com.github.choseongah.ssh.shell.SimpleTableBuilder` is available to
+The `SimpleTable.builder()` API is available to
 quickly set up print table.
 
 Quick example:
 
-````java
+```java
 class Commands {
-    public table() {
-        helper.renderTable(SimpleTable.builder()
+    public String table() {
+        return helper.renderTable(SimpleTable.builder()
                 .column("col1")
                 .column("col2")
                 .column("col3")
@@ -610,12 +799,11 @@ class Commands {
                 .build());
     }
 }
+```
 
-````
+Result:
 
-Result :
-
-````text
+```text
 ┌──────────┬──────────┬──────────┬──────────┐
 │   col1   │   col2   │   col3   │   col4   │
 ├──────────┼──────────┼──────────┼──────────┤
@@ -631,7 +819,7 @@ Result :
 ├──────────┼──────────┼──────────┼──────────┤
 │line6 col1│line6 col2│line6 col3│line6 col4│
 └──────────┴──────────┴──────────┴──────────┘
-````
+```
 
 ### Interactive
 
@@ -647,22 +835,21 @@ called.
 This can be used to display progress, monitoring, etc.
 
 The interactive
-builder, [Interactive.java](./starter/src/main/java/com/github/fonimus/ssh/shell/interactive/Interactive.java)
+builder, [Interactive.java](./starter/src/main/java/com/github/choseongah/ssh/shell/interactive/Interactive.java)
 allows you to build your interactive command.
 
-This builder can also take key bindings to make specific actions, whose can be
+This builder can also take key bindings to make specific actions, which can be
 made by the following builder:
-[KeyBinding.java](./starter/src/main/java/com/github/fonimus/ssh/shell/interactive/KeyBinding.java).
+[KeyBinding.java](./starter/src/main/java/com/github/choseongah/ssh/shell/interactive/KeyBinding.java).
 
 ```java
-
 @SshShellComponent
 public class DemoCommand {
 
     @Autowired
     private SshShellHelper helper;
 
-    @ShellMethod("Interactive command")
+    @Command(name = "interactive", description = "Interactive command")
     public void interactive() {
 
         KeyBinding binding = KeyBinding.builder()
@@ -685,7 +872,7 @@ public class DemoCommand {
             lines.add(AttributedString.fromAnsi(SshShellHelper.INTERACTIVE_LONG_MESSAGE + "\n"));
 
             return lines;
-        }).binding(binding).fullScreen(true | false).refreshDelay(5000).build();
+        }).binding(binding).fullScreen(true).refreshDelay(5000).build();
 
         helper.interactive(interactive);
     }
@@ -700,22 +887,22 @@ Note: existing key bindings are:
 
 ### Role check
 
-If you are using *AuthenticationProvider* thanks to
-property `ssh.shell.authentication=security`, you can check that
-connected user has right authorities for command.
-The easiest way of doing it is thanks to `ShellMethodAvailability`
-functionality. Example:
+If you are using Spring Security thanks to
+property `ssh.shell.authentication=security`, you can check that the
+connected user has the right authorities for a command.
+With the current Spring Shell 4 integration, availability is provided through a
+named `AvailabilityProvider` bean.
+
+Example:
 
 ```java
-
 @SshShellComponent
 public class DemoCommand {
 
     @Autowired
     private SshShellHelper helper;
 
-    @ShellMethod("Admin command")
-    @ShellMethodAvailability("adminAvailability")
+    @Command(name = "admin", description = "Admin command", availabilityProvider = "adminAvailabilityProvider")
     public String admin() {
         return "Finally an administrator !!";
     }
@@ -727,19 +914,27 @@ public class DemoCommand {
         return Availability.available();
     }
 }
+
+@Configuration
+class DemoConfiguration {
+
+    @Bean("adminAvailabilityProvider")
+    public AvailabilityProvider adminAvailabilityProvider(DemoCommand demoCommand) {
+        return demoCommand::adminAvailability;
+    }
+}
 ```
 
 ### Retrieve spring security authentication
 
 ```java
-
 @SshShellComponent
 public class DemoCommand {
 
     @Autowired
     private SshShellHelper helper;
 
-    @ShellMethod("Authentication command")
+    @Command(name = "authentication", description = "Authentication command")
     public SshAuthentication authentication() {
         return helper.getAuthentication();
     }
@@ -754,15 +949,13 @@ it will be used as welcome prompt message.
 ## Listeners
 
 An interface is provided in order to receive events on ssh
-sessions : ``com.github.choseongah.ssh.shell.listeners
-.SshShellListener``.
+sessions: `com.github.choseongah.ssh.shell.listeners.SshShellListener`.
 
 Implement it and define a spring bean in order to receive events.
 
 _Example_
 
-````java
-
+```java
 @Configuration
 class ShellListenerConfiguration {
     @Bean
@@ -773,11 +966,11 @@ class ShellListenerConfiguration {
                 event.getSession().getServerSession().getIoSession().getRemoteAddress());
     }
 }
-````
+```
 
 ## Session Manager
 
-> **Note: since 1.3.0**`
+> **Note: since 1.3.0**
 
 A session manager bean is available and allows you to:
 
@@ -789,24 +982,24 @@ A session manager bean is available and allows you to:
 
 _Example_
 
-````java
+```java
 class Commands {
     public MyCommand(@Lazy SshShellSessionManager sessionManager) {
         this.sessionManager = sessionManager;
     }
 
-    @ShellMethod("My command")
+    @Command(name = "my-command", description = "My command")
     public String myCommand() {
         sessionManager.listSessions();
         //...
     }
 }
-````
+```
 
 ### Manage sessions commands
 
-If activated `ssh.shell.commands.manage-sessions.enable=true`, the following
-commands are available :
+If activated `ssh.shell.commands.manage-sessions.enabled=true`, the following
+commands are available:
 
 * `manage-sessions-info`: Displays information about single session
 * `manage-sessions-list`: Displays active sessions
@@ -816,10 +1009,9 @@ commands are available :
 
 It can be annoying to load ssh server during spring boot tests.
 `SshShellProperties` class provides constants to easily deactivate
-the all ssh and spring shell auto configurations:
+this starter and the main Spring Shell auto configuration:
 
 ```java
-
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE, properties = {"ssh.shell.port=2346",
         SshShellProperties.DISABLE_SSH_SHELL,
         SshShellProperties.DISABLE_SPRING_SHELL_AUTO_CONFIG
@@ -836,4 +1028,4 @@ public class ApplicationTest {
 
 ## Release notes
 
-Please check [github releases page](https://github.com/fonimus/ssh-shell-spring-boot/releases).
+Please check [GitHub releases page](https://github.com/choseongah/ssh-shell-spring-boot/releases).

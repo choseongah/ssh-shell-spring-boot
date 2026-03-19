@@ -246,7 +246,7 @@ public class SshMethodInvokerCommandAdapter extends AbstractCommand {
         }
         try {
             ObjectMapper mapper = this.applicationContext.getBean(ObjectMapper.class);
-            return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(result);
+            return mapper.writeValueAsString(result);
         } catch (BeansException | JacksonException e) {
             return result;
         }

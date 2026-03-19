@@ -35,14 +35,9 @@ import static com.github.choseongah.ssh.shell.SshShellProperties.ADMIN_ROLE;
 public class CommandProperties {
 
     /**
-     * Create command at startup
-     */
-    private boolean create = true;
-
-    /**
      * Enable command at startup
      */
-    private boolean enable = true;
+    private boolean enabled = false;
 
     /**
      * Is command restricted
@@ -68,7 +63,7 @@ public class CommandProperties {
      */
     public static CommandProperties disabledByDefault() {
         CommandProperties properties = new CommandProperties();
-        properties.setEnable(false);
+        properties.setEnabled(false);
         return properties;
     }
 

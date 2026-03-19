@@ -48,8 +48,8 @@ import java.util.stream.Collectors;
  */
 @SshShellComponent("sshJmxCommand")
 @ConditionalOnProperty(
-        name = SshShellProperties.SSH_SHELL_PREFIX + ".commands." + JmxCommand.GROUP + ".create",
-        havingValue = "true", matchIfMissing = true
+        name = SshShellProperties.SSH_SHELL_PREFIX + ".commands." + JmxCommand.GROUP + ".enabled",
+        havingValue = "true"
 )
 public class JmxCommand extends AbstractCommand {
 
