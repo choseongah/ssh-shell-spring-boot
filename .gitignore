@@ -14,3 +14,6 @@ samples/public-keys-sample
 
 # Codex
 .tools
+
+# Etc
+*.log
