@@ -1,1 +1,3 @@
-com.github.fonimus.ssh.shell.SshShellAutoConfiguration
+com.github.choseongah.ssh.shell.SshCommandRegistryAutoConfiguration
+com.github.choseongah.ssh.shell.SshShellRunnerAutoConfiguration
+com.github.choseongah.ssh.shell.SshShellAutoConfiguration

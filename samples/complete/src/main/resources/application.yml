@@ -1,66 +1,74 @@
-spring:
-  jmx:
-    enabled: false
-  first-datasource:
-    url: jdbc:h2:mem:testdb
-  second-datasource:
-    url: jdbc:h2:mem:testdb2
-  main.lazy-initialization: true
-
 ssh:
   shell:
     authentication: security
+    auth-provider-bean-name: sshAuthenticationManager
     authorized-public-keys: classpath:.ssh/authorized.keys
     commands:
       actuator:
-        excludes:
-          - audit
-      jvm:
-        enable: false
-      threads:
-        enable: false
-      manage-sessions:
+        enable: true
+      jmx:
         enable: true
       datasource:
-        excludes:
+        enable: true
+      stacktrace:
+        enable: true
+      tasks:
+        enable: true
+      system:
+        enable: true
+      script:
+        enable: true
+      manage-sessions:
+        enable: true
     host: 0.0.0.0
+    port: 10045
     shared-history: false
-    history-directory: ./target
+    history-directory: ./target/ssh-history
+
+spring:
+  jmx:
+    enabled: true
+  first-datasource:
+    url: jdbc:h2:mem:test-db-first
+  second-datasource:
+    url: jdbc:h2:mem:test-db-second
+  main.lazy-initialization: true
+  shell:
+    interactive:
+      enabled: false
 
 management:
   endpoints:
+    access:
+      default: unrestricted
+    jmx:
+      exposure:
+        include: "*"
     web:
       exposure:
-        include: '*'
+        include: "*"
   endpoint:
+    heapdump:
+      access: unrestricted
     shutdown:
-      enabled: true
-    health:
-      group:
-        nocommands:
-          include: '*'
-          exclude:
-            - demo-command
-        commands:
-          include:
-            - demo-command
+      access: unrestricted
   info:
-    build.enabled: true
-    env.enabled: true
-    git.enabled: true
-    java.enabled: true
-    os.enabled: true
+    defaults:
+      enabled: true
+    env:
+      enabled: true
+    java:
+      enabled: true
+    os:
+      enabled: true
+    process:
+      enabled: true
 
+info:
+  app:
+    name: ssh-shell-spring-boot-complete-sample
+    description: Complete sample
 
 logging:
   level:
-    com.github.fonimus: debug
-
-info:
-  build:
-    groupId: ${project.artifactId}
-    artifactId: ${project.groupId}
-    version: ${project.version}
-  dependencies:
-    spring-boot: ${spring-boot.version}
-    spring-shell: ${spring-shell.version}
+    com.github.choseongah: debug

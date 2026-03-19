@@ -5,22 +5,26 @@ ssh:
     prompt:
       color: cyan
       text: 'basic::>'
+    user: user
     password: password
-    authorized-public-keys-file: samples/complete/src/main/resources/.ssh/authorized.keys
     commands:
+      actuator:
+        create: false
       jmx:
+        create: false
+      datasource:
+        create: false
+      stacktrace:
+        create: false
+      tasks:
+        create: false
+      system:
         create: false
       script:
         create: false
-      history:
-        create: false
-      postprocessors:
-        create: false
       manage-sessions:
-        create: false
-      system:
         create: false
 
 logging:
   level:
-    com.github.fonimus: debug
+    com.github.choseongah: debug
