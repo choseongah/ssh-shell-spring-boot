@@ -77,9 +77,9 @@ publishing {
                 }
                 developers {
                     developer {
-                        id.set("chosongah")
+                        id.set("choseongah")
                         name.set("Cho Seong-ah")
-                        email.set("chosongah@kakao.com")
+                        email.set("choseongah@kakao.com")
                     }
                 }
                 scm {

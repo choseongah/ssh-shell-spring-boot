@@ -3,7 +3,7 @@
 [![Build Status](https://github.com/choseongah/ssh-shell-spring-boot/actions/workflows/build.yml/badge.svg)](https://github.com/choseongah/ssh-shell-spring-boot/actions/workflows/build.yml)
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=choseongah_ssh-shell-spring-boot&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=choseongah_ssh-shell-spring-boot)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=choseongah_ssh-shell-spring-boot&metric=coverage)](https://sonarcloud.io/dashboard?id=choseongah_ssh-shell-spring-boot)
-[![Maven Central](https://img.shields.io/maven-central/v/com.github.choseongah/ssh-shell-spring-boot-starter.svg?label=maven%20central)](https://search.maven.org/search?q=g:%22com.github.choseongah%22%20AND%20a:%22ssh-shell-spring-boot-starter%22)
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.choseongah/ssh-shell-spring-boot-starter.svg?label=maven%20central)](https://search.maven.org/search?q=g:%22io.github.choseongah%22%20AND%20a:%22ssh-shell-spring-boot-starter%22)
 
 > Maintained fork of François Onimus's original repository:
 > [fonimus/ssh-shell-spring-boot](https://github.com/fonimus/ssh-shell-spring-boot)
@@ -42,7 +42,7 @@ visit `spring shell` [website](https://docs.spring.io/spring-shell/reference/4.0
 
 ```xml
 <dependency>
-    <groupId>com.github.choseongah</groupId>
+    <groupId>io.github.choseongah</groupId>
     <artifactId>ssh-shell-spring-boot-starter</artifactId>
 </dependency>
 ```
@@ -68,7 +68,7 @@ spring:
 ### Configuration
 
 Please check
-class: [SshShellProperties.java](./starter/src/main/java/com/github/choseongah/ssh/shell/SshShellProperties.java)
+class: [SshShellProperties.java](./starter/src/main/java/io/github/choseongah/ssh/shell/SshShellProperties.java)
 for more
 information.
 
@@ -105,7 +105,7 @@ ssh:
       - y
       - yes
     prompt:
-      # in enum: com.github.choseongah.ssh.shell.PromptColor (black, red, green, yellow, blue, magenta, cyan, white, bright)
+      # in enum: io.github.choseongah.ssh.shell.PromptColor (black, red, green, yellow, blue, magenta, cyan, white, bright)
       color: white
       text: 'shell>'
     commands:
@@ -341,7 +341,7 @@ For more information please
 visit `spring shell` [website](https://docs.spring.io/spring-shell/reference/).
 
 Instead of using a regular `@Component`, you can use
-`com.github.choseongah.ssh.shell.commands.SshShellComponent`:
+`io.github.choseongah.ssh.shell.commands.SshShellComponent`:
 it is just a conditional `@Component` with `@ConditionalOnProperty` on
 property **ssh.shell.enable**.
 
@@ -351,7 +351,7 @@ Commands themselves are declared with Spring Shell 4 annotations such as
 Example:
 
 ```java
-import com.github.choseongah.ssh.shell.commands.SshShellComponent;
+import io.github.choseongah.ssh.shell.commands.SshShellComponent;
 import org.springframework.shell.core.command.annotation.Argument;
 import org.springframework.shell.core.command.annotation.Command;
 import org.springframework.shell.core.command.annotation.Option;
@@ -490,7 +490,7 @@ one.
 | Multiple `TaskScheduler` beans named **ts1**, **ts2** in context                                                                                            | Local single-threaded (could not find name **taskScheduler**) |
 | Multiple `TaskScheduler` beans named **taskScheduler**, **ts2**, **ts3** in context                                                                        | **taskScheduler** bean                                        |
 | Task scheduler specified in method `SchedulingConfigurer#configureTasks`                                                                                    | Local single-threaded (not set in task)                       |
-| Task scheduler specified in method `SchedulingConfigurer#configureTasks` **AND** `com.github.choseongah.ssh.shell.commands.TasksCommand.setTaskScheduler` | Scheduler manually set                                        |
+| Task scheduler specified in method `SchedulingConfigurer#configureTasks` **AND** `io.github.choseongah.ssh.shell.commands.TasksCommand.setTaskScheduler` | Scheduler manually set                                        |
 
 ### Jmx
 
@@ -620,7 +620,7 @@ Enumeration option parameters have auto-completion by default.
 
 ### File
 
-Thanks to [ExtendedFileCompletionProvider.java](./starter/src/main/java/com/github/choseongah/ssh/shell/completion/ExtendedFileCompletionProvider.java),
+Thanks to [ExtendedFileCompletionProvider.java](./starter/src/main/java/io/github/choseongah/ssh/shell/completion/ExtendedFileCompletionProvider.java),
 auto-completion is available
 for `java.io.File` parameters and behaves correctly on Windows paths.
 
@@ -667,7 +667,7 @@ existing one in the spring context.
 Example:
 
 ```java
-import com.github.choseongah.ssh.shell.auth.SshShellAuthenticationProvider;
+import io.github.choseongah.ssh.shell.auth.SshShellAuthenticationProvider;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -689,14 +689,14 @@ If more than one is present, set `ssh.shell.auth-provider-bean-name`.
 
 ## Command helper
 
-A `com.github.choseongah.ssh.shell.SshShellHelper` bean is provided in context to
+A `io.github.choseongah.ssh.shell.SshShellHelper` bean is provided in context to
 help for additional functionalities.
 
 You can either autowire it or inject it in a constructor:
 
 ```java
-import com.github.choseongah.ssh.shell.SshShellHelper;
-import com.github.choseongah.ssh.shell.commands.SshShellComponent;
+import io.github.choseongah.ssh.shell.SshShellHelper;
+import io.github.choseongah.ssh.shell.commands.SshShellComponent;
 
 @SshShellComponent
 public class DemoCommand {
@@ -828,19 +828,19 @@ Result:
 This method takes an interface to display lines at regular interval.
 
 Every **refresh delay** (here 2
-seconds), `com.github.choseongah.ssh.shell.interactive.InteractiveInput.getLines`
+seconds), `io.github.choseongah.ssh.shell.interactive.InteractiveInput.getLines`
 is
 called.
 
 This can be used to display progress, monitoring, etc.
 
 The interactive
-builder, [Interactive.java](./starter/src/main/java/com/github/choseongah/ssh/shell/interactive/Interactive.java)
+builder, [Interactive.java](./starter/src/main/java/io/github/choseongah/ssh/shell/interactive/Interactive.java)
 allows you to build your interactive command.
 
 This builder can also take key bindings to make specific actions, which can be
 made by the following builder:
-[KeyBinding.java](./starter/src/main/java/com/github/choseongah/ssh/shell/interactive/KeyBinding.java).
+[KeyBinding.java](./starter/src/main/java/io/github/choseongah/ssh/shell/interactive/KeyBinding.java).
 
 ```java
 @SshShellComponent
@@ -949,7 +949,7 @@ it will be used as welcome prompt message.
 ## Listeners
 
 An interface is provided in order to receive events on ssh
-sessions: `com.github.choseongah.ssh.shell.listeners.SshShellListener`.
+sessions: `io.github.choseongah.ssh.shell.listeners.SshShellListener`.
 
 Implement it and define a spring bean in order to receive events.
 

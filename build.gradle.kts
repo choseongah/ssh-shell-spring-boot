@@ -13,7 +13,7 @@ plugins {
     id("io.spring.dependency-management") version "1.1.7" apply false
 }
 
-group = "com.github.choseongah"
+group = "io.github.choseongah"
 
 val springBootVersion: String by project
 val springShellVersion: String by project

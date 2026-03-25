@@ -82,4 +82,4 @@ info:
 
 logging:
   level:
-    com.github.choseongah: debug
+    io.github.choseongah: debug

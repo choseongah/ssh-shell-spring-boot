@@ -1,3 +1,3 @@
-com.github.choseongah.ssh.shell.SshCommandRegistryAutoConfiguration
-com.github.choseongah.ssh.shell.SshShellRunnerAutoConfiguration
-com.github.choseongah.ssh.shell.SshShellAutoConfiguration
+io.github.choseongah.ssh.shell.SshCommandRegistryAutoConfiguration
+io.github.choseongah.ssh.shell.SshShellRunnerAutoConfiguration
+io.github.choseongah.ssh.shell.SshShellAutoConfiguration
