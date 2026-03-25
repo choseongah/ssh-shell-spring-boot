@@ -9,7 +9,7 @@ updates:
       interval: daily
       time: "04:00"
 
-  - package-ecosystem: maven
+  - package-ecosystem: gradle
     directory: "/"
     open-pull-requests-limit: 99
     schedule:

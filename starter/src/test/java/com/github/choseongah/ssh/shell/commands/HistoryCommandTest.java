@@ -82,6 +82,8 @@ class HistoryCommandTest {
 
     private void testWrite(HistoryCommand cmd, String fileName) throws IOException {
         File file = new File(fileName);
+        File parent = file.getParentFile();
+        assertTrue(parent == null || parent.exists() || parent.mkdirs());
         String lines = (String) cmd.history(file, false);
         assertNotNull(lines);
         assertEquals(file.getAbsolutePath(), lines);

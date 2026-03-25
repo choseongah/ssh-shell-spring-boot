@@ -59,8 +59,8 @@ public class JsonPointerPostProcessor
                 if (node.isMissingNode()) {
                     return "No node found with json path expression: " + path;
                 } else {
-                    if (node.isTextual()) {
-                        return node.asText();
+                    if (node.isString()) {
+                        return node.asString();
                     } else {
                         return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(node);
                     }

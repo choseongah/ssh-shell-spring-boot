@@ -19,6 +19,8 @@ package com.github.choseongah.ssh.shell.conf;
 import org.springframework.boot.security.autoconfigure.actuate.web.servlet.EndpointRequest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Primary;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -39,7 +41,9 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SshShellSecurityConfigurationTest {
 
     @Bean
+    @Order(Integer.MAX_VALUE - 6)
     SecurityFilterChain filterChain(HttpSecurity http) {
+        http.securityMatcher(EndpointRequest.toAnyEndpoint());
         http.authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(EndpointRequest.to("info")).permitAll()
                         .requestMatchers(EndpointRequest.toAnyEndpoint()).hasRole("ACTUATOR")
@@ -63,6 +67,7 @@ public class SshShellSecurityConfigurationTest {
     }
 
     @Bean
+    @Primary
     AuthenticationManager authManager(UserDetailsService userDetailsService, PasswordEncoder passwordEncoder) {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder);

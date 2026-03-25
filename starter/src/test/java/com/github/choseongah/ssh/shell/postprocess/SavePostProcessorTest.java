@@ -42,6 +42,8 @@ class SavePostProcessorTest {
     @Test
     void process() throws Exception {
         File file = new File("target/test.txt");
+        File parent = file.getParentFile();
+        assertTrue(parent == null || parent.exists() || parent.mkdirs());
         if (file.exists()) {
             assertTrue(Files.deleteIfExists(file.toPath()));
         }

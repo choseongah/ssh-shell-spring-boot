@@ -1,0 +1,54 @@
+plugins {
+    id("org.springframework.boot")
+}
+
+val springBootVersion: String by project
+val springShellVersion: String by project
+val jacksonVersion: String by project
+
+description = "Ssh shell spring boot complete sample"
+
+val starterCoordinates = "${project.group}:ssh-shell-spring-boot-starter:${project.version}"
+
+base {
+    archivesName.set("ssh-shell-spring-boot-complete-sample")
+}
+
+dependencies {
+    implementation("org.springframework.boot:spring-boot-starter")
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-security")
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-jdbc")
+    implementation(starterCoordinates)
+    implementation("com.h2database:h2")
+
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+}
+
+configurations.configureEach {
+    resolutionStrategy.dependencySubstitution {
+        substitute(module(starterCoordinates)).using(project(":ssh-shell-spring-boot-starter"))
+    }
+}
+
+val replacements = mapOf(
+    $$"${project.groupId}" to project.group.toString(),
+    $$"${project.artifactId}" to "ssh-shell-spring-boot-complete-sample",
+    $$"${project.version}" to project.version.toString(),
+    $$"${spring-boot.version}" to springBootVersion,
+    $$"${spring-shell.version}" to springShellVersion,
+    $$"${jackson.version}" to jacksonVersion,
+)
+
+tasks.processResources {
+    filteringCharset = "UTF-8"
+    inputs.properties(replacements)
+    filesMatching(listOf("**/*.yml", "**/*.txt")) {
+        filter { line ->
+            replacements.entries.fold(line) { current, (placeholder, value) ->
+                current.replace(placeholder, value)
+            }
+        }
+    }
+}

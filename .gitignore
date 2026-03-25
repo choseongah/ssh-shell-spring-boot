@@ -1,19 +1,18 @@
 # project
 target/
+build/
+.gradle/
 
 # intellij
 .idea/*
 !.idea/runConfigurations
 *.iml
 
-# public key file example
-samples/public-keys-sample
-
 # mac os
 .DS_Store
 
-# Codex
-.tools
-
 # Etc
 *.log
+
+# Codex
+.tools

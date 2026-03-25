@@ -29,6 +29,7 @@ import org.springframework.boot.logging.LogLevel;
 import org.springframework.boot.micrometer.metrics.actuate.endpoint.MetricsEndpoint;
 
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Collections;
 import java.util.Map;
 
@@ -195,9 +196,10 @@ abstract class AbstractCommandTest
     protected void setCtx(String response) throws Exception {
         LineReader lr = mock(LineReader.class);
         Terminal t = mock(Terminal.class);
+        PrintWriter writer = new PrintWriter(new StringWriter());
         when(lr.getTerminal()).thenReturn(t);
         when(t.getSize()).thenReturn(new Size(300, 20));
-        when(t.writer()).thenReturn(new PrintWriter("target/rh.tmp"));
+        when(t.writer()).thenReturn(writer);
         ParsedLine pl = mock(ParsedLine.class);
         when(pl.line()).thenReturn(response);
         when(lr.getParsedLine()).thenReturn(pl);

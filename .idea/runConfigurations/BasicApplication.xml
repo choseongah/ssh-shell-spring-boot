@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="BasicApplication" type="SpringBootApplicationConfigurationType" factoryName="Spring Boot" nameIsGenerated="true">
-    <module name="ssh-shell-spring-boot-basic-sample" />
+    <module name="ssh-shell-spring-boot.ssh-shell-spring-boot-basic-sample.main" />
     <option name="SPRING_BOOT_MAIN_CLASS" value="com.github.choseongah.ssh.shell.basic.BasicApplication" />
     <method v="2">
       <option name="Make" enabled="true" />
