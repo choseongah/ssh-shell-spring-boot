@@ -105,12 +105,12 @@ publishing {
     }
 }
 
-val signingKey = providers.gradleProperty("signingKey")
-val signingPassword = providers.gradleProperty("signingPassword")
+val signingKeyId = providers.gradleProperty("signing.keyId")
+val signingPassword = providers.gradleProperty("signing.password")
+val signingSecretKeyRingFile = providers.gradleProperty("signing.secretKeyRingFile")
 
 signing {
-    if (signingKey.isPresent && signingPassword.isPresent) {
-        useInMemoryPgpKeys(signingKey.get(), signingPassword.get())
+    if (signingKeyId.isPresent && signingPassword.isPresent && signingSecretKeyRingFile.isPresent) {
         sign(publishing.publications["mavenJava"])
     }
 }

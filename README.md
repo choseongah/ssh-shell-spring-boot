@@ -35,6 +35,7 @@ visit `spring shell` [website](https://docs.spring.io/spring-shell/reference/4.0
 * [Tests](#tests)
 * [Samples](#samples)
 * [Release notes](#release-notes)
+* [For Next Maintainer](./docs/for-next-maintainer.md)
 
 ## Getting started
 
@@ -1029,3 +1030,9 @@ public class ApplicationTest {
 ## Release notes
 
 Please check [GitHub releases page](https://github.com/choseongah/ssh-shell-spring-boot/releases).
+
+---
+
+# For Next Maintainer
+
+See [docs/for-next-maintainer.md](./docs/for-next-maintainer.md).
