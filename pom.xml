@@ -6,7 +6,7 @@
   ~ you may not use this file except in compliance with the License.
   ~ You may obtain a copy of the License at
   ~
-  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~     https://www.apache.org/licenses/LICENSE-2.0
   ~
   ~ Unless required by applicable law or agreed to in writing, software
   ~ distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,26 +26,26 @@
 
     <name>Ssh shell spring boot</name>
     <description>Ssh shell for Spring Boot</description>
-    <url>https://github.com/fonimus/ssh-shell-spring-boot/</url>
+    <url>https://github.com/choseongah/ssh-shell-spring-boot/</url>
 
     <developers>
         <developer>
-            <id>fonimus</id>
-            <email>francois.onimus@gmail.com</email>
-            <name>François Onimus</name>
-            <timezone>Europe/Paris</timezone>
+            <id>chosongah</id>
+            <email>chosongah@kakao.com</email>
+            <name>Cho Seong-ah</name>
+            <timezone>Seoul/Korea</timezone>
         </developer>
     </developers>
 
     <issueManagement>
         <system>GitHub</system>
-        <url>https://github.com/fonimus/ssh-shell-spring-boot/issues</url>
+        <url>https://github.com/choseongah/ssh-shell-spring-boot/issues</url>
     </issueManagement>
 
     <licenses>
         <license>
             <name>Apache License 2.0</name>
-            <url>http://www.apache.org/licenses/</url>
+            <url>https://www.apache.org/licenses/</url>
             <distribution>repo</distribution>
         </license>
     </licenses>
@@ -55,7 +55,7 @@
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!--dependencies-->
-        <spring-boot.version>4.0.3</spring-boot.version>
+        <spring-boot.version>4.0.4</spring-boot.version>
         <sshd.version>2.17.1</sshd.version>
         <spring-shell.version>4.0.1</spring-shell.version>
         <jackson.version>3.1.0</jackson.version>
@@ -67,9 +67,9 @@
     </properties>
 
     <scm>
-        <connection>scm:git:git@github.com:fonimus/ssh-shell-spring-boot.git</connection>
-        <url>scm:git:git@github.com:fonimus/ssh-shell-spring-boot.git</url>
-        <developerConnection>scm:git:git@github.com:fonimus/ssh-shell-spring-boot.git</developerConnection>
+        <connection>scm:git:git@github.com:choseongah/ssh-shell-spring-boot.git</connection>
+        <url>scm:git:git@github.com:choseongah/ssh-shell-spring-boot.git</url>
+        <developerConnection>scm:git:git@github.com:choseongah/ssh-shell-spring-boot.git</developerConnection>
         <tag>HEAD</tag>
     </scm>
 

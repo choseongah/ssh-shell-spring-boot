@@ -37,6 +37,9 @@ spring:
     interactive:
       enabled: false
 
+server:
+  port: 18080
+
 management:
   endpoints:
     access:

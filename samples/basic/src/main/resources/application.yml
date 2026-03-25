@@ -25,6 +25,9 @@ ssh:
       manage-sessions:
         enabled: false
 
+server:
+  port: 18080
+
 logging:
   level:
     com.github.choseongah: debug
