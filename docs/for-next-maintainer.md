@@ -65,25 +65,28 @@ the project first. Manual Gradle analysis and SonarCloud Automatic Analysis
 cannot be enabled at the same time, and JaCoCo coverage requires the
 manual/CI-based analysis path.
 
-This repository does not commit `gradle/verification-metadata.xml`. The file is
-gitignored and should be treated as a temporary local artifact that is created
-only for SonarCloud analysis. SonarCloud reports a security hotspot when the
-file is missing, but keeping it around permanently can make IntelliJ Gradle
-sync noisy because the IDE may resolve extra source and javadoc artifacts.
+This repository commits `gradle/verification-metadata.xml`. Keep it in sync
+when dependencies, plugins, or resolved artifacts change so Gradle dependency
+verification stays reproducible in local environments and CI.
+
+If dependency verification metadata needs to be refreshed, regenerate it
+locally, review the diff, and commit the updated file. The metadata can include
+extra source or javadoc artifacts depending on what Gradle resolved, so prefer
+refreshing it deliberately instead of letting unrelated changes accumulate.
 
 Then run:
 
 ```bash
-./gradlew --no-daemon --write-verification-metadata sha256 sonar
-rm -f gradle/verification-metadata.xml
+./gradlew --no-daemon --write-verification-metadata sha256 build
+./gradlew --no-daemon sonar
 ```
 
 The `help` task is only there to give Gradle a lightweight task to execute
 while it writes verification metadata. If IntelliJ IDEA or another IDE reports
 dependency verification failures during Gradle sync, check the generated report
 under `build/reports/dependency-verification/`. In most cases the simplest
-recovery is to remove `gradle/verification-metadata.xml` and reload the
-project.
+recovery is to regenerate `gradle/verification-metadata.xml`, review the
+resulting diff, and reload the project.
 
 ## SNAPSHOT publishing
 

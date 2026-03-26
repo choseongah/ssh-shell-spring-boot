@@ -2,7 +2,6 @@
 target/
 build/
 .gradle/
-gradle/verification-metadata.xml
 
 # intellij
 .idea/*
