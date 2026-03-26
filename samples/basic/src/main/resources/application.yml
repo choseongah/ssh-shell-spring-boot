@@ -1,29 +1,15 @@
-spring.shell.interactive.enabled: false
-
 ssh:
   shell:
     prompt:
-      color: cyan
+      color: bright
       text: 'basic::>'
     user: user
     password: password
-    commands:
-      actuator:
-        enabled: false
-      jmx:
-        enabled: false
-      datasource:
-        enabled: false
-      stacktrace:
-        enabled: false
-      tasks:
-        enabled: false
-      system:
-        enabled: false
-      script:
-        enabled: false
-      manage-sessions:
-        enabled: false
+
+spring:
+  shell:
+    interactive:
+      enabled: false
 
 server:
   port: 18080

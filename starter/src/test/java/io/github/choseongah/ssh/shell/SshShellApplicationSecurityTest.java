@@ -34,9 +34,6 @@ import static io.github.choseongah.ssh.shell.SshHelperTest.*;
                 "ssh.shell.authentication=security",
                 "ssh.shell.authProviderBeanName=authManager",
                 "management.endpoints.web.exposure.include=*",
-                "spring.session.store-type=none",
-                "spring.autoconfigure.exclude=org.springframework.boot.session.autoconfigure.SessionAutoConfiguration,"
-                        + "org.springframework.boot.session.autoconfigure.SessionsEndpointAutoConfiguration",
                 "spring.shell.interactive.enabled=false"
         }
 )

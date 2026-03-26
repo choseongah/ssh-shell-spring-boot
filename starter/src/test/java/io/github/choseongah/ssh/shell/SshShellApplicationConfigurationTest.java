@@ -36,9 +36,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
         "ssh.shell.hostKeyFile=target/test.tmp",
         "ssh.shell.enable=true",
         "management.endpoints.web.exposure.include=*",
-        "spring.session.store-type=none",
-        "spring.autoconfigure.exclude=org.springframework.boot.session.autoconfigure.SessionAutoConfiguration,"
-                + "org.springframework.boot.session.autoconfigure.SessionsEndpointAutoConfiguration",
         "spring.shell.interactive.enabled=false"
 })
 @DirtiesContext

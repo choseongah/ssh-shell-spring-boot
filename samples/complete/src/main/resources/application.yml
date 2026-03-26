@@ -21,7 +21,7 @@ ssh:
       manage-sessions:
         enabled: true
     host: 0.0.0.0
-    port: 10045
+    port: 2222
     shared-history: false
     history-directory: ./target/ssh-history
 

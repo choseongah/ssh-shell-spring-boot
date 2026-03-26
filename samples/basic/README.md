@@ -16,12 +16,6 @@
     ~/home$ ssh -p 2222 [user|actuator|admin]@localhost
     Password authentication
     Password: [password]
-
-            _         _        _ _
-      _____| |_    __| |_  ___| | |
-     (_-<_-< ' \  (_-< ' \/ -_) | |
-     /__/__/_||_| /__/_||_\___|_|_| v4.0.1-2-SNAPSHOT
-
     Please type `help` to see available commands
     basic::>help
     AVAILABLE COMMANDS
