@@ -17,8 +17,9 @@ group = "io.github.choseongah"
 
 val springBootVersion: String by project
 val springShellVersion: String by project
-val jacksonVersion: String by project
 val sshdVersion: String by project
+val jacksonVersion: String by project
+val lombokVersion: String by project
 
 subprojects {
     apply(plugin = "java-library")
@@ -46,16 +47,18 @@ subprojects {
             dependency("org.apache.sshd:sshd-core:$sshdVersion")
             dependency("org.springframework.shell:spring-shell-starter:$springShellVersion")
             dependency("org.springframework.shell:spring-shell-jline:$springShellVersion")
-            dependency("org.awaitility:awaitility:4.2.1")
+            dependency("org.awaitility:awaitility:4.3.0")
             dependency("com.jcraft:jsch:0.1.55")
         }
     }
 
     dependencies {
-        add("compileOnly", "org.projectlombok:lombok:1.18.44")
-        add("annotationProcessor", "org.projectlombok:lombok:1.18.44")
-        add("testCompileOnly", "org.projectlombok:lombok:1.18.44")
-        add("testAnnotationProcessor", "org.projectlombok:lombok:1.18.44")
+        add("compileOnly", "org.projectlombok:lombok:$lombokVersion")
+        add("annotationProcessor", "org.projectlombok:lombok:$lombokVersion")
+        add("annotationProcessor", "org.springframework.boot:spring-boot-configuration-processor:$springBootVersion")
+        add("testCompileOnly", "org.projectlombok:lombok:$lombokVersion")
+        add("testAnnotationProcessor", "org.projectlombok:lombok:$lombokVersion")
+        add("testAnnotationProcessor", "org.springframework.boot:spring-boot-configuration-processor:$springBootVersion")
         add("testRuntimeOnly", "org.junit.platform:junit-platform-launcher")
     }
 

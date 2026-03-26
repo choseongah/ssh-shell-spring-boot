@@ -18,19 +18,23 @@ java {
 }
 
 dependencies {
-    api("org.springframework.boot:spring-boot-autoconfigure")
-    api("org.springframework.boot:spring-boot-starter-actuator")
-    api("org.springframework.boot:spring-boot-session")
-    api("org.springframework.boot:spring-boot-starter-security")
-    api("org.springframework.boot:spring-boot-configuration-processor")
+    annotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
     api("jakarta.annotation:jakarta.annotation-api")
-    api("tools.jackson.core:jackson-databind")
     api("org.apache.sshd:sshd-core")
+    api("org.springframework.boot:spring-boot-autoconfigure")
     api("org.springframework.shell:spring-shell-starter")
     api("org.springframework.shell:spring-shell-jline")
+    compileOnly("tools.jackson.core:jackson-databind")
+    compileOnly("org.springframework.boot:spring-boot-starter-actuator")
+    compileOnly("org.springframework.boot:spring-boot-session")
+    compileOnly("org.springframework.boot:spring-boot-starter-security")
 
+    testAnnotationProcessor("org.springframework.boot:spring-boot-configuration-processor")
+    testImplementation("org.springframework.boot:spring-boot-starter-actuator")
+    testImplementation("org.springframework.boot:spring-boot-session")
+    testImplementation("org.springframework.boot:spring-boot-starter-security")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("org.springframework.boot:spring-boot-starter")
+    testImplementation("org.springframework.boot:spring-boot-starter-security")
     testImplementation("org.springframework.boot:spring-boot-starter-web")
     testImplementation("org.springframework.session:spring-session-jdbc")
     testImplementation("com.h2database:h2")
@@ -42,7 +46,6 @@ val optionalDependencies = setOf(
     "org.springframework.boot:spring-boot-starter-actuator",
     "org.springframework.boot:spring-boot-session",
     "org.springframework.boot:spring-boot-starter-security",
-    "org.springframework.boot:spring-boot-configuration-processor",
     "tools.jackson.core:jackson-databind",
 )
 
