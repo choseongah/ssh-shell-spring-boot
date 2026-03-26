@@ -19,7 +19,6 @@ package io.github.choseongah.ssh.shell;
 import io.github.choseongah.ssh.shell.commands.SshShellComponent;
 import org.springframework.aop.support.AopUtils;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -45,7 +44,6 @@ import static io.github.choseongah.ssh.shell.SshShellProperties.SSH_SHELL_ENABLE
  * Register programmatic and annotated commands with a custom adapter supporting ssh features.
  */
 @AutoConfiguration
-@AutoConfigureBefore(name = "org.springframework.shell.core.autoconfigure.CommandRegistryAutoConfiguration")
 @ConditionalOnProperty(name = SSH_SHELL_ENABLE, havingValue = "true", matchIfMissing = true)
 public class SshCommandRegistryAutoConfiguration {
 

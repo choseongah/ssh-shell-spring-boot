@@ -29,8 +29,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.sshd.server.SshServer;
 import org.jline.reader.LineReader;
 import org.jline.terminal.Terminal;
-import org.jline.utils.AttributedString;
-import org.jline.utils.AttributedStyle;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -44,8 +42,9 @@ import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.event.ContextRefreshedEvent;
+import org.springframework.shell.core.autoconfigure.JLineShellAutoConfiguration;
+import org.springframework.shell.core.autoconfigure.SpringShellAutoConfiguration;
 import org.springframework.shell.core.autoconfigure.SpringShellProperties;
-import org.springframework.shell.jline.PromptProvider;
 
 import jakarta.annotation.PostConstruct;
 import java.util.List;
@@ -62,9 +61,9 @@ import static io.github.choseongah.ssh.shell.SshShellProperties.SSH_SHELL_PREFIX
 @ConditionalOnClass(SshServer.class)
 @ConditionalOnProperty(name = SSH_SHELL_ENABLE, havingValue = "true", matchIfMissing = true)
 @EnableConfigurationProperties({SshShellProperties.class})
-@AutoConfigureAfter(name = {
-        "org.springframework.shell.core.autoconfigure.SpringShellAutoConfiguration",
-        "org.springframework.shell.core.autoconfigure.JLineShellAutoConfiguration"
+@AutoConfigureAfter({
+        SpringShellAutoConfiguration.class,
+        JLineShellAutoConfiguration.class
 })
 @ComponentScan(basePackages = {"io.github.choseongah.ssh.shell"})
 @AllArgsConstructor
@@ -132,18 +131,6 @@ public class SshShellAutoConfiguration {
     @ConditionalOnProperty(value = SSH_SHELL_PREFIX + ".authentication", havingValue = "simple", matchIfMissing = true)
     public SshShellAuthenticationProvider sshShellSimpleAuthenticationProvider() {
         return new SshShellPasswordAuthenticationProvider(properties.getUser(), properties.getPassword());
-    }
-
-    /**
-     * Primary prompt provider
-     *
-     * @return prompt provider
-     */
-    @Bean
-    @ConditionalOnMissingBean
-    public PromptProvider sshPromptProvider() {
-        return () -> new AttributedString(properties.getPrompt().getText(),
-                AttributedStyle.DEFAULT.foreground(properties.getPrompt().getColor().toJlineAttributedStyle()));
     }
 
     /**

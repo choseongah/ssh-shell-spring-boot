@@ -23,7 +23,6 @@ import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -37,10 +36,6 @@ import static io.github.choseongah.ssh.shell.SshShellProperties.SSH_SHELL_ENABLE
  * Prevent spring shell non interactive runner from logging an error in ssh only mode.
  */
 @AutoConfiguration
-@AutoConfigureBefore(name = {
-        "org.springframework.shell.core.autoconfigure.JLineShellAutoConfiguration",
-        "org.springframework.shell.core.autoconfigure.ShellRunnerAutoConfiguration"
-})
 @ConditionalOnClass(ShellRunner.class)
 @ConditionalOnProperty(name = SSH_SHELL_ENABLE, havingValue = "true", matchIfMissing = true)
 public class SshShellRunnerAutoConfiguration {
@@ -66,7 +61,11 @@ public class SshShellRunnerAutoConfiguration {
                 if (registry.containsBeanDefinition("scriptCommand")) {
                     registry.removeBeanDefinition("scriptCommand");
                 }
-                if (!interactiveEnabled && registry.containsBeanDefinition("springShellApplicationRunner")) {
+                if (registry.containsBeanDefinition("commandRegistry")
+                        && registry.containsBeanDefinition("sshCommandRegistry")) {
+                    registry.removeBeanDefinition("commandRegistry");
+                }
+                if (registry.containsBeanDefinition("springShellApplicationRunner")) {
                     registry.removeBeanDefinition("springShellApplicationRunner");
                 }
             }

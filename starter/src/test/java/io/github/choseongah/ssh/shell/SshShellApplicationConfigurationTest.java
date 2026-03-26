@@ -16,16 +16,21 @@
 
 package io.github.choseongah.ssh.shell;
 
+import org.jline.utils.AttributedStyle;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.shell.jline.PromptProvider;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.annotation.DirtiesContext;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE, classes =
-        SshShellApplicationExclusionsTest.TestApplication.class, properties = {
+        SshShellApplicationConfigurationTest.TestApplication.class, properties = {
         "ssh.shell.port=2344",
         "ssh.shell.commands.actuator.excludes[0]=info",
         "ssh.shell.commands.actuator.excludes[1]=beans",
@@ -39,8 +44,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
         "spring.shell.interactive.enabled=false"
 })
 @DirtiesContext
-class SshShellApplicationExclusionsTest
+class SshShellApplicationConfigurationTest
         extends AbstractTest {
+
+    @Autowired
+    private SshShellCommandFactory sshShellCommandFactory;
 
     @Test
     void testCommandAvailability() {
@@ -49,6 +57,17 @@ class SshShellApplicationExclusionsTest
         assertFalse(cmd.infoAvailability().isAvailable());
         assertFalse(cmd.beansAvailability().isAvailable());
         assertTrue(cmd.configpropsAvailability().isAvailable());
+    }
+
+    @Test
+    void testPromptPropertiesAreApplied() {
+        PromptProvider promptProvider = (PromptProvider) ReflectionTestUtils.getField(sshShellCommandFactory, "promptProvider");
+
+        assertEquals("test>", promptProvider.getPrompt().toString());
+        assertEquals(
+                AttributedStyle.DEFAULT.foreground(PromptColor.RED.toJlineAttributedStyle()).getStyle(),
+                promptProvider.getPrompt().styleAt(0).getStyle()
+        );
     }
 
     @SpringBootApplication

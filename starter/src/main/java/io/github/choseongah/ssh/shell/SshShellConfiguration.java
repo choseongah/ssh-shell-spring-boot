@@ -27,6 +27,10 @@ import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.auth.pubkey.RejectAllPublickeyAuthenticator;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.jline.reader.LineReader;
+import org.jline.utils.AttributedString;
+import org.jline.utils.AttributedStyle;
+import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.boot.Banner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -34,6 +38,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.core.io.Resource;
 import org.springframework.shell.core.command.CommandParser;
 import org.springframework.shell.core.command.CommandRegistry;
+import org.springframework.shell.core.autoconfigure.JLineShellAutoConfiguration;
 import org.springframework.shell.jline.PromptProvider;
 
 import jakarta.annotation.PostConstruct;
@@ -43,6 +48,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
+import java.util.Map;
 
 /**
  * Ssh shell configuration
@@ -66,7 +72,7 @@ public class SshShellConfiguration {
      * @param commandRegistry      spring shell command registry
      * @param commandParser        spring shell command parser
      * @param lineReader           default line reader
-     * @param promptProvider       prompt provider
+     * @param promptProviders      available prompt providers
      * @param postProcessorService ssh post processor service
      * @return ssh shell command factory
      */
@@ -77,10 +83,59 @@ public class SshShellConfiguration {
                                                          CommandRegistry commandRegistry,
                                                          CommandParser commandParser,
                                                          LineReader lineReader,
-                                                         PromptProvider promptProvider,
+                                                         ConfigurableListableBeanFactory beanFactory,
+                                                         Map<String, PromptProvider> promptProviders,
                                                          SshPostProcessorService postProcessorService) {
+        PromptProvider promptProvider = resolveSshPromptProvider(beanFactory, promptProviders);
         return new SshShellCommandFactory(properties, shellListenerService, shellBanner, environment, commandRegistry,
                 commandParser, lineReader, promptProvider, postProcessorService);
+    }
+
+    /**
+     * Choose the SSH prompt provider once at bean creation time.
+     * Prefer an application-defined prompt provider and otherwise fall back to SSH properties.
+     *
+     * @param beanFactory bean factory used to inspect prompt provider definitions
+     * @param promptProviders available prompt providers keyed by bean name
+     * @return prompt provider used by SSH sessions
+     */
+    private PromptProvider resolveSshPromptProvider(ConfigurableListableBeanFactory beanFactory,
+                                                    Map<String, PromptProvider> promptProviders) {
+        Map<String, PromptProvider> customPromptProviders = promptProviders.entrySet().stream()
+                .filter(entry -> !isSpringShellDefaultPromptProvider(beanFactory, entry.getKey()))
+                .collect(java.util.stream.Collectors.toMap(
+                        Map.Entry::getKey,
+                        Map.Entry::getValue,
+                        (left, right) -> left,
+                        java.util.LinkedHashMap::new
+                ));
+
+        if (customPromptProviders.size() > 1) {
+            throw new IllegalStateException("Multiple custom PromptProvider beans found: " + customPromptProviders.keySet());
+        }
+        if (customPromptProviders.size() == 1) {
+            return customPromptProviders.values().iterator().next();
+        }
+        return createPropertiesPromptProvider();
+    }
+
+    private PromptProvider createPropertiesPromptProvider() {
+        AttributedString prompt = new AttributedString(properties.getPrompt().getText(),
+                AttributedStyle.DEFAULT.foreground(properties.getPrompt().getColor().toJlineAttributedStyle()));
+        return () -> prompt;
+    }
+
+    /**
+     * Detect Spring Shell's fallback prompt provider so it can be replaced by the SSH properties prompt.
+     *
+     * @param beanFactory bean factory used to inspect bean metadata
+     * @param beanName prompt provider bean name to inspect
+     * @return true if the bean is Spring Shell's default prompt provider
+     */
+    private boolean isSpringShellDefaultPromptProvider(ConfigurableListableBeanFactory beanFactory, String beanName) {
+        BeanDefinition beanDefinition = beanFactory.getBeanDefinition(beanName);
+        return "promptProvider".equals(beanDefinition.getFactoryMethodName())
+                && JLineShellAutoConfiguration.class.getName().equals(beanDefinition.getFactoryBeanName());
     }
 
     /**
