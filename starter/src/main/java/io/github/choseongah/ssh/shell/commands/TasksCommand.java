@@ -19,7 +19,6 @@ package io.github.choseongah.ssh.shell.commands;
 import io.github.choseongah.ssh.shell.SimpleTable;
 import io.github.choseongah.ssh.shell.SshShellHelper;
 import io.github.choseongah.ssh.shell.SshShellProperties;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.DisposableBean;
@@ -55,6 +54,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.springframework.scheduling.annotation.ScheduledAnnotationBeanPostProcessor.DEFAULT_TASK_SCHEDULER_BEAN_NAME;
 
@@ -252,6 +252,7 @@ public class TasksCommand extends AbstractCommand implements DisposableBean {
         return helper.getSuccess("Tasks " + stopped + " stopped");
     }
 
+    @SuppressWarnings("unchecked")
     @Command(name = COMMAND_TASKS_RESTART, group = "Tasks Commands",
             description = "Restart all or specified task(s)",
             availabilityProvider = RESTART_AVAILABILITY_PROVIDER, completionProvider = RESTART_COMPLETION_PROVIDER)
@@ -274,16 +275,16 @@ public class TasksCommand extends AbstractCommand implements DisposableBean {
             if (state != null && state.getScheduledTask() != null) {
                 if (state.getStatus() == TaskStatus.stopped) {
                     Task taskObj = state.getScheduledTask().getTask();
-                    ScheduledFuture<?> future = null;
+                    ScheduledFuture<Object> future = null;
                     if (taskObj instanceof CronTask cronTask) {
-                        future = taskScheduler().schedule(state.getScheduledTask().getTask().getRunnable(),
-                                cronTask.getTrigger());
+                        future = (ScheduledFuture<Object>) taskScheduler().schedule(
+                                state.getScheduledTask().getTask().getRunnable(), cronTask.getTrigger());
                     } else if (taskObj instanceof FixedDelayTask fixedDelayTask) {
-                        future = taskScheduler().scheduleWithFixedDelay(
+                        future = (ScheduledFuture<Object>) taskScheduler().scheduleWithFixedDelay(
                                 state.getScheduledTask().getTask().getRunnable(),
                                 fixedDelayTask.getIntervalDuration());
                     } else if (taskObj instanceof FixedRateTask fixedRateTask) {
-                        future = taskScheduler().scheduleAtFixedRate(
+                        future = (ScheduledFuture<Object>) taskScheduler().scheduleAtFixedRate(
                                 state.getScheduledTask().getTask().getRunnable(),
                                 fixedRateTask.getIntervalDuration());
                     } else {
@@ -328,7 +329,8 @@ public class TasksCommand extends AbstractCommand implements DisposableBean {
             if (state.getScheduledTask() != null) {
                 try {
                     String executionId = taskName + "-" + generateExecutionId();
-                    ScheduledFuture<?> future = taskScheduler().schedule(
+                    @SuppressWarnings("unchecked")
+                    ScheduledFuture<Object> future = (ScheduledFuture<Object>) taskScheduler().schedule(
                             state.getScheduledTask().getTask().getRunnable(), Instant.now());
                     statesByName.put(executionId, new TaskState(executionId, null, TaskStatus.running, future));
                     started.add(executionId);
@@ -437,7 +439,6 @@ public class TasksCommand extends AbstractCommand implements DisposableBean {
      */
     @Data
     @NoArgsConstructor
-    @AllArgsConstructor
     public static class TaskState {
 
         private String name;
@@ -446,7 +447,22 @@ public class TasksCommand extends AbstractCommand implements DisposableBean {
 
         private TaskStatus status;
 
-        private volatile ScheduledFuture<?> future;
+        private final AtomicReference<ScheduledFuture<Object>> future = new AtomicReference<>();
+
+        public TaskState(String name, ScheduledTask scheduledTask, TaskStatus status, ScheduledFuture<Object> future) {
+            this.name = name;
+            this.scheduledTask = scheduledTask;
+            this.status = status;
+            this.future.set(future);
+        }
+
+        public ScheduledFuture<Object> getFuture() {
+            return future.get();
+        }
+
+        public void setFuture(ScheduledFuture<Object> future) {
+            this.future.set(future);
+        }
     }
 
     /**

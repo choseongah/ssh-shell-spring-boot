@@ -36,11 +36,8 @@ import org.jline.terminal.Size;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.impl.AbstractPosixTerminal;
 import org.jline.utils.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.shell.jline.tui.table.Aligner;
 import org.springframework.shell.jline.tui.table.ArrayTableModel;
-import org.springframework.shell.jline.tui.table.BorderStyle;
 import org.springframework.shell.jline.tui.table.CellMatcher;
 import org.springframework.shell.jline.tui.table.SimpleHorizontalAligner;
 import org.springframework.shell.jline.tui.table.SimpleVerticalAligner;
@@ -71,12 +68,8 @@ public class SshShellHelper {
     );
 
     private final List<String> confirmWords;
-    @Autowired
-    @Lazy
-    private Terminal defaultTerminal;
-    @Autowired
-    @Lazy
-    private LineReader defaultLineReader;
+    private final Terminal defaultTerminal;
+    private final LineReader defaultLineReader;
 
     /**
      * Constructor with confirmation words
@@ -84,7 +77,20 @@ public class SshShellHelper {
      * @param confirmWords confirmation words
      */
     public SshShellHelper(List<String> confirmWords) {
+        this(confirmWords, null, null);
+    }
+
+    /**
+     * Constructor with confirmation words and local prompt defaults
+     *
+     * @param confirmWords      confirmation words
+     * @param defaultTerminal   default terminal used for local prompt
+     * @param defaultLineReader default line reader used for local prompt
+     */
+    public SshShellHelper(List<String> confirmWords, Terminal defaultTerminal, LineReader defaultLineReader) {
         this.confirmWords = confirmWords != null ? confirmWords : DEFAULT_CONFIRM_WORDS;
+        this.defaultTerminal = defaultTerminal;
+        this.defaultLineReader = defaultLineReader;
     }
 
     /**
@@ -745,11 +751,4 @@ public class SshShellHelper {
         private boolean stop;
     }
 
-    public void setDefaultTerminal(Terminal defaultTerminal) {
-        this.defaultTerminal = defaultTerminal;
-    }
-
-    public void setDefaultLineReader(LineReader defaultLineReader) {
-        this.defaultLineReader = defaultLineReader;
-    }
 }

@@ -112,10 +112,11 @@ public class SshShellAutoConfiguration {
     @Bean
     public SshShellHelper sshShellHelper(ObjectProvider<Terminal> terminalProvider,
                                          ObjectProvider<LineReader> lineReaderProvider) {
-        SshShellHelper helper = new SshShellHelper(properties.getConfirmationWords());
-        helper.setDefaultTerminal(terminalProvider.getIfAvailable());
-        helper.setDefaultLineReader(lineReaderProvider.getIfAvailable());
-        return helper;
+        return new SshShellHelper(
+                properties.getConfirmationWords(),
+                terminalProvider.getIfAvailable(),
+                lineReaderProvider.getIfAvailable()
+        );
     }
 
     @Bean

@@ -68,6 +68,7 @@ public class CompleteCommands {
     public static final String CUSTOM_VALUES_PROVIDER = "customValuesProvider";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CompleteCommands.class);
+    private static final SecureRandom RANDOM = new SecureRandom();
 
     private final SshShellHelper helper;
 
@@ -252,9 +253,8 @@ public class CompleteCommands {
 
             lines.add(sb.toAttributedString());
 
-            SecureRandom sr = new SecureRandom();
-            lines.add(new AttributedStringBuilder().append(helper.progress(sr.nextInt(100)),
-                    AttributedStyle.DEFAULT.foreground(sr.nextInt(6) + 1)).toAttributedString());
+            lines.add(new AttributedStringBuilder().append(helper.progress(RANDOM.nextInt(100)),
+                    AttributedStyle.DEFAULT.foreground(RANDOM.nextInt(6) + 1)).toAttributedString());
             lines.add(AttributedString.fromAnsi(SshShellHelper.INTERACTIVE_LONG_MESSAGE + "\n"));
 
             return lines;

@@ -35,7 +35,7 @@ configurations.
 If you want to publish SNAPSHOT builds, enable `SNAPSHOTs` for that namespace in
 Central Portal as well.
 
-## Local build
+## Build
 
 Build everything locally before publishing:
 
@@ -48,6 +48,32 @@ Publish the starter to your local Maven repository:
 ```bash
 ./gradlew :ssh-shell-spring-boot-starter:publishToMavenLocal
 ```
+
+## Maintaining verification-metadata.xml
+
+This repository commits `gradle/verification-metadata.xml` and relies on Gradle
+dependency verification during normal builds once that file exists.
+
+If dependencies change, update the verification metadata with:
+
+```bash
+./gradlew --no-daemon --write-verification-metadata sha256 help
+```
+
+Review the diff before committing it. This file is a trust baseline, not a
+throwaway generated artifact.
+
+If IntelliJ IDEA or another IDE fails during Gradle sync with a dependency
+verification error, check the generated report under
+`build/reports/dependency-verification/`. IDE sync can resolve extra artifacts
+that a normal CLI build does not, such as Gradle source distributions
+(`gradle-<version>-src.zip`). In that case, add the missing checksum entry to
+`gradle/verification-metadata.xml` and retry the sync.
+
+The sample projects should depend on the starter through
+`project(":ssh-shell-spring-boot-starter")` while working in this multi-module
+build. Using published starter coordinates plus dependency substitution caused
+duplicate metadata generation problems when bootstrapping verification metadata.
 
 ## Sending test coverage to SonarCloud
 

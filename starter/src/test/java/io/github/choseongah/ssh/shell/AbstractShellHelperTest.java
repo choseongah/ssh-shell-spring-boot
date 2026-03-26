@@ -54,9 +54,7 @@ public abstract class AbstractShellHelperTest {
         when(lr.getTerminal()).thenReturn(ter);
         when(lr.getHistory()).thenReturn(new DefaultHistory());
 
-        h = new SshShellHelper(null);
-        h.setDefaultTerminal(ter);
-        h.setDefaultLineReader(lr);
+        h = new SshShellHelper(null, ter, lr);
         when(ter.getType()).thenReturn("osx");
         when(ter.getSize()).thenReturn(new Size(123, 40));
     }
