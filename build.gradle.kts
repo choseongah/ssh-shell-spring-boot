@@ -85,6 +85,18 @@ subprojects {
             html.required.set(true)
         }
     }
+
+    sonar {
+        properties {
+            property(
+                "sonar.coverage.jacoco.xmlReportPaths",
+                layout.buildDirectory.file("reports/jacoco/test/jacocoTestReport.xml")
+                    .get()
+                    .asFile
+                    .absolutePath
+            )
+        }
+    }
 }
 
 nexusPublishing {
@@ -101,6 +113,12 @@ sonar {
         property("sonar.projectKey", "choseongah_ssh-shell-spring-boot")
         property("sonar.organization", "choseongah")
         property("sonar.host.url", "https://sonarcloud.io")
+    }
+}
+
+listOf("sonar", "sonarqube").forEach { taskName ->
+    tasks.named(taskName) {
+        dependsOn(subprojects.map { "${it.path}:jacocoTestReport" })
     }
 }
 

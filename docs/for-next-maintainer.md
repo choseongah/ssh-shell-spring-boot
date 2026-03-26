@@ -49,6 +49,28 @@ Publish the starter to your local Maven repository:
 ./gradlew :ssh-shell-spring-boot-starter:publishToMavenLocal
 ```
 
+## Sending test coverage to SonarCloud
+
+If you want to send test results and JaCoCo coverage to SonarCloud through
+Gradle, add the Sonar token to `~/.gradle/gradle.properties`:
+
+```properties
+systemProp.sonar.token=<sonarcloud-token>
+```
+
+Keep this in your local Gradle home only. Do not commit it to the repository.
+
+If you send analysis through Gradle, disable SonarCloud Automatic Analysis for
+the project first. Manual Gradle analysis and SonarCloud Automatic Analysis
+cannot be enabled at the same time, and JaCoCo coverage requires the
+manual/CI-based analysis path.
+
+Then run:
+
+```bash
+./gradlew --no-daemon sonar
+```
+
 ## SNAPSHOT publishing
 
 For SNAPSHOT publishing, keep the version in `gradle.properties` with the
