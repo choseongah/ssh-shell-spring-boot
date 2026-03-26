@@ -49,32 +49,6 @@ Publish the starter to your local Maven repository:
 ./gradlew :ssh-shell-spring-boot-starter:publishToMavenLocal
 ```
 
-## Maintaining verification-metadata.xml
-
-This repository commits `gradle/verification-metadata.xml` and relies on Gradle
-dependency verification during normal builds once that file exists.
-
-If dependencies change, update the verification metadata with:
-
-```bash
-./gradlew --no-daemon --write-verification-metadata sha256 help
-```
-
-Review the diff before committing it. This file is a trust baseline, not a
-throwaway generated artifact.
-
-If IntelliJ IDEA or another IDE fails during Gradle sync with a dependency
-verification error, check the generated report under
-`build/reports/dependency-verification/`. IDE sync can resolve extra artifacts
-that a normal CLI build does not, such as Gradle source distributions
-(`gradle-<version>-src.zip`). In that case, add the missing checksum entry to
-`gradle/verification-metadata.xml` and retry the sync.
-
-The sample projects should depend on the starter through
-`project(":ssh-shell-spring-boot-starter")` while working in this multi-module
-build. Using published starter coordinates plus dependency substitution caused
-duplicate metadata generation problems when bootstrapping verification metadata.
-
 ## Sending test coverage to SonarCloud
 
 If you want to send test results and JaCoCo coverage to SonarCloud through
@@ -91,11 +65,25 @@ the project first. Manual Gradle analysis and SonarCloud Automatic Analysis
 cannot be enabled at the same time, and JaCoCo coverage requires the
 manual/CI-based analysis path.
 
+This repository does not commit `gradle/verification-metadata.xml`. The file is
+gitignored and should be treated as a temporary local artifact that is created
+only for SonarCloud analysis. SonarCloud reports a security hotspot when the
+file is missing, but keeping it around permanently can make IntelliJ Gradle
+sync noisy because the IDE may resolve extra source and javadoc artifacts.
+
 Then run:
 
 ```bash
-./gradlew --no-daemon sonar
+./gradlew --no-daemon --write-verification-metadata sha256 sonar
+rm -f gradle/verification-metadata.xml
 ```
+
+The `help` task is only there to give Gradle a lightweight task to execute
+while it writes verification metadata. If IntelliJ IDEA or another IDE reports
+dependency verification failures during Gradle sync, check the generated report
+under `build/reports/dependency-verification/`. In most cases the simplest
+recovery is to remove `gradle/verification-metadata.xml` and reload the
+project.
 
 ## SNAPSHOT publishing
 
