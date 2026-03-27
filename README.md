@@ -11,11 +11,6 @@
 
 Current maintained line:
 
-* Java 17
-* Spring Boot 4.0.5
-* Spring Shell 4.0.1
-* Jackson 3.1.0
-
 ---
 
 > Spring shell in spring boot application over ssh
