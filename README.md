@@ -1,8 +1,10 @@
 # Spring Boot Ssh Shell
 
-[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=choseongah_ssh-shell-spring-boot&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=choseongah_ssh-shell-spring-boot)
-[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=choseongah_ssh-shell-spring-boot&metric=coverage)](https://sonarcloud.io/dashboard?id=choseongah_ssh-shell-spring-boot)
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.choseongah/ssh-shell-spring-boot-starter.svg?label=maven%20central)](https://central.sonatype.com/artifact/io.github.choseongah/ssh-shell-spring-boot-starter)
+
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=choseongah_ssh-shell-spring-boot&metric=alert_status)](https://sonarcloud.io/dashboard?id=choseongah_ssh-shell-spring-boot)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=choseongah_ssh-shell-spring-boot&metric=security_rating)](https://sonarcloud.io/dashboard?id=choseongah_ssh-shell-spring-boot)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=choseongah_ssh-shell-spring-boot&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=choseongah_ssh-shell-spring-boot)
 
 > Maintained fork of François Onimus's original repository:
 > [fonimus/ssh-shell-spring-boot](https://github.com/fonimus/ssh-shell-spring-boot)
