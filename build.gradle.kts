@@ -123,6 +123,8 @@ listOf("sonar", "sonarqube").forEach { taskName ->
 }
 
 tasks.register("printVersion") {
+    group = "Help"
+    description = "Prints the project version"
     doLast {
         println(project.version)
     }

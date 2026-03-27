@@ -53,17 +53,18 @@ public class AbstractCommand {
     protected Availability availability(String commandGroup, String commandName) {
         try {
             preAvailability();
+            String notAvailableMessage = SshShellProperties.SSH_SHELL_PREFIX + ".commands." + commandGroup;
             if (!commandProperties.isEnabled()) {
-                return Availability.unavailable("command deactivated (please check property '"
-                        + SshShellProperties.SSH_SHELL_PREFIX + ".commands." + commandGroup + ".enabled" + "')");
+                return Availability.unavailable("command is deactivated (please check property '"
+                        + notAvailableMessage + ".enabled" + "')");
             }
             if (commandProperties.getExcludes() != null && commandProperties.getExcludes().contains(commandName)) {
                 return Availability.unavailable("command is excluded (please check property '"
-                        + SshShellProperties.SSH_SHELL_PREFIX + ".commands." + commandGroup + ".excludes" + "')");
+                        + notAvailableMessage + ".excludes" + "')");
             }
             if (commandProperties.getIncludes() != null && !commandProperties.getIncludes().contains(commandName)) {
                 return Availability.unavailable("command not included (please check property '"
-                        + SshShellProperties.SSH_SHELL_PREFIX + ".commands." + commandGroup + ".includes" + "')");
+                        + notAvailableMessage + ".includes" + "')");
             }
             if (helper.isLocalPrompt()) {
                 LOGGER.debug("Not an ssh session -> local prompt -> giving all rights");
