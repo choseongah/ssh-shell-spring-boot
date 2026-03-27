@@ -9,8 +9,6 @@
 > Maintained fork of François Onimus's original repository:
 > [fonimus/ssh-shell-spring-boot](https://github.com/fonimus/ssh-shell-spring-boot)
 
-Current maintained line:
-
 ---
 
 > Spring shell in spring boot application over ssh
