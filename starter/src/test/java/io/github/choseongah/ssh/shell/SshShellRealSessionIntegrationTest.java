@@ -42,10 +42,12 @@ import org.springframework.shell.core.command.annotation.Command;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -158,15 +160,37 @@ class SshShellRealSessionIntegrationTest {
         assertThrows(IOException.class, () -> executePublicKeyCommand("pub-user", generateRsaKeyPair(), "test-session-info"));
     }
 
+    @Test
+    void exitCommandClosesSessionWithoutChannelClosedStacktrace() throws Exception {
+        ByteArrayOutputStream errBuffer = new ByteArrayOutputStream();
+        PrintStream originalErr = System.err;
+
+        try (PrintStream capturedErr = new PrintStream(errBuffer, true, StandardCharsets.UTF_8)) {
+            System.setErr(capturedErr);
+
+            executePasswordCommand("user", "pass", "exit", null);
+            SessionEvent stopped = collector.awaitEvent(SshShellEventType.SESSION_STOPPED);
+
+            assertTrue(stopped.sessionId() > 0);
+            assertFalse(errBuffer.toString(StandardCharsets.UTF_8).contains("SshChannelClosedException"));
+        } finally {
+            System.setErr(originalErr);
+        }
+    }
+
     private String executePasswordCommand(String user, String password, String command) throws Exception {
-        return executeCommand(user, session -> session.addPasswordIdentity(password), command);
+        return executePasswordCommand(user, password, command, "|END");
+    }
+
+    private String executePasswordCommand(String user, String password, String command, String marker) throws Exception {
+        return executeCommand(user, session -> session.addPasswordIdentity(password), command, marker);
     }
 
     private String executePublicKeyCommand(String user, KeyPair keyPair, String command) throws Exception {
-        return executeCommand(user, session -> session.addPublicKeyIdentity(keyPair), command);
+        return executeCommand(user, session -> session.addPublicKeyIdentity(keyPair), command, "|END");
     }
 
-    private String executeCommand(String user, SessionConfigurer configurer, String command) throws Exception {
+    private String executeCommand(String user, SessionConfigurer configurer, String command, String marker) throws Exception {
         try (SshClient client = SshClient.setUpDefaultClient()) {
             client.setServerKeyVerifier((clientSession, remoteAddress, serverKey) -> true);
             client.start();
@@ -175,14 +199,14 @@ class SshShellRealSessionIntegrationTest {
                     .getSession()) {
                 configurer.configure(session);
                 session.auth().verify(TIMEOUT);
-                return executeShellCommand(session, command);
+                return executeShellCommand(session, command, marker);
             } finally {
                 client.stop();
             }
         }
     }
 
-    private String executeShellCommand(ClientSession session, String command) throws Exception {
+    private String executeShellCommand(ClientSession session, String command, String marker) throws Exception {
         try (ChannelShell channel = session.createShellChannel();
              PipedInputStream commandInput = new PipedInputStream();
              PipedOutputStream commandWriter = new PipedOutputStream(commandInput);
@@ -197,7 +221,7 @@ class SshShellRealSessionIntegrationTest {
             commandWriter.write((command + "\r").getBytes(StandardCharsets.UTF_8));
             commandWriter.flush();
 
-            String output = readUntil(responseReader, "|END");
+            String output = marker != null ? readUntil(responseReader, marker) : readUntilClosed(responseReader);
             channel.close(false).await(TIMEOUT);
             return output;
         }
@@ -215,6 +239,20 @@ class SshShellRealSessionIntegrationTest {
                 if (buffer.toString().contains(marker)) {
                     return true;
                 }
+            }
+        });
+        return buffer.toString();
+    }
+
+    private String readUntilClosed(InputStream inputStream) {
+        StringBuilder buffer = new StringBuilder();
+        await().atMost(TIMEOUT).until(() -> {
+            while (true) {
+                int read = inputStream.read();
+                if (read < 0) {
+                    return true;
+                }
+                buffer.append((char) read);
             }
         });
         return buffer.toString();
