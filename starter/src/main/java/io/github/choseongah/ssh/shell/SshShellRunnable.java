@@ -21,7 +21,9 @@ import io.github.choseongah.ssh.shell.auth.SshShellAuthenticationProvider;
 import io.github.choseongah.ssh.shell.listeners.SshShellListenerService;
 import io.github.choseongah.ssh.shell.postprocess.PostProcessorObject;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.sshd.common.channel.exception.SshChannelClosedException;
 import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.Signal;
 import org.apache.sshd.server.channel.ChannelSession;
@@ -37,6 +39,7 @@ import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 import org.jline.utils.AttributedStringBuilder;
 import org.jline.utils.AttributedStyle;
+import org.jspecify.annotations.NonNull;
 import org.springframework.boot.Banner;
 import org.springframework.core.env.Environment;
 import org.springframework.shell.core.command.CommandContext;
@@ -69,18 +72,15 @@ import static io.github.choseongah.ssh.shell.SshShellCommandFactory.SSH_THREAD_C
 /**
  * Runnable for an SSH shell session.
  */
+@SuppressWarnings("resource")
 @Slf4j
 @AllArgsConstructor
 public class SshShellRunnable implements Runnable {
 
     private static final String SSH_ENV_COLUMNS = "COLUMNS";
-
     private static final String SSH_ENV_LINES = "LINES";
-
     private static final String SSH_ENV_TERM = "TERM";
-
     private static final String PIPE = "|";
-
     private static final String ARROW = ">";
 
     private final SshShellProperties properties;
@@ -93,15 +93,19 @@ public class SshShellRunnable implements Runnable {
     private final Environment environment;
     private final SshPostProcessorService postProcessorService;
     private final ChannelSession session;
-    private final org.apache.sshd.server.Environment sshEnv;
     private final InputStream is;
     private final OutputStream os;
     private final ExitCallback ec;
 
+    @Getter
+    private final org.apache.sshd.server.Environment sshEnv;
+
     @Override
     public void run() {
         LOGGER.debug("{}: running...", session);
-        TerminalBuilder terminalBuilder = TerminalBuilder.builder().system(false).streams(is, os);
+        TerminalBuilder terminalBuilder = TerminalBuilder.builder()
+                .system(false)
+                .streams(is, new SafeTerminalOutputStream(os));
         boolean sizeAvailable = false;
         if (sshEnv.getEnv().containsKey(SSH_ENV_COLUMNS) && sshEnv.getEnv().containsKey(SSH_ENV_LINES)) {
             try {
@@ -402,7 +406,71 @@ public class SshShellRunnable implements Runnable {
         return session.getSession();
     }
 
-    public org.apache.sshd.server.Environment getSshEnv() {
-        return sshEnv;
+    @FunctionalInterface
+    private interface IoOperation {
+
+        void execute() throws IOException;
     }
+
+    private final class SafeTerminalOutputStream extends OutputStream {
+
+        private final OutputStream delegate;
+        private volatile boolean closedChannel;
+
+        private SafeTerminalOutputStream(OutputStream delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public void write(int b) throws IOException {
+            execute(() -> delegate.write(b));
+        }
+
+        @Override
+        public void write(byte @NonNull [] b, int off, int len) throws IOException {
+            execute(() -> delegate.write(b, off, len));
+        }
+
+        @Override
+        public void flush() throws IOException {
+            execute(delegate::flush);
+        }
+
+        @Override
+        public void close() throws IOException {
+            execute(delegate::close);
+        }
+
+        private void execute(IoOperation operation) throws IOException {
+            if (closedChannel) {
+                return;
+            }
+            try {
+                operation.execute();
+            } catch (IOException e) {
+                handleWriteFailure(e);
+            }
+        }
+
+        private void handleWriteFailure(IOException exception) throws IOException {
+            if (isClosedChannelException(exception)) {
+                closedChannel = true;
+                LOGGER.debug("{}: terminal output ignored because SSH channel is already closed", session);
+                return;
+            }
+            throw exception;
+        }
+
+        private boolean isClosedChannelException(Throwable throwable) {
+            Throwable current = throwable;
+            while (current != null) {
+                if (current instanceof SshChannelClosedException) {
+                    return true;
+                }
+                current = current.getCause();
+            }
+            return false;
+        }
+    }
+
 }

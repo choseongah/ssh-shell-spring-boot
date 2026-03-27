@@ -86,11 +86,11 @@ public class SshShellCommandFactory implements Command {
                         environment,
                         postProcessorService,
                         channelSession,
-                        sshEnv,
                         sshIO.getIs(),
                         sshIO.getOs(),
-                        sshIO.getEc()),
-                "ssh-session-" + channelSession.getServerSession().getIoSession().getId());
+                        sshIO.getEc(),
+                        sshEnv
+                ), "ssh-session-" + channelSession.getServerSession().getIoSession().getId());
         sshThread.start();
         threads.put(channelSession, sshThread);
         SSH_IO_CONTEXT.remove();
@@ -100,7 +100,7 @@ public class SshShellCommandFactory implements Command {
     @Override
     public void destroy(ChannelSession channelSession) {
         Thread sshThread = threads.remove(channelSession);
-        if (sshThread != null) {
+        if (sshThread != null && sshThread != Thread.currentThread()) {
             sshThread.interrupt();
         }
         LOGGER.debug("{}: destroyed [{} session(s) currently active]", channelSession, threads.size());
