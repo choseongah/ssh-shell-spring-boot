@@ -16,6 +16,7 @@
 
 package io.github.choseongah.ssh.shell;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.sshd.common.channel.PtyMode;
 import org.jline.terminal.Attributes;
 
@@ -24,6 +25,7 @@ import java.util.Map;
 /**
  * Utility tools
  */
+@Slf4j
 public final class SshShellUtils {
 
     private SshShellUtils() {
@@ -71,18 +73,62 @@ public final class SshShellUtils {
                         attr.setControlChar(Attributes.ControlChar.VSTATUS, e.getValue());
                 case VDISCARD ->
                         attr.setControlChar(Attributes.ControlChar.VDISCARD, e.getValue());
+                case CS7 ->
+                        attr.setControlFlag(Attributes.ControlFlag.CS7, e.getValue() != 0);
+                case CS8 ->
+                        attr.setControlFlag(Attributes.ControlFlag.CS8, e.getValue() != 0);
+                case PARENB ->
+                        attr.setControlFlag(Attributes.ControlFlag.PARENB, e.getValue() != 0);
+                case PARODD ->
+                        attr.setControlFlag(Attributes.ControlFlag.PARODD, e.getValue() != 0);
                 case ECHO ->
                         attr.setLocalFlag(Attributes.LocalFlag.ECHO, e.getValue() != 0);
+                case ECHOE ->
+                        attr.setLocalFlag(Attributes.LocalFlag.ECHOE, e.getValue() != 0);
+                case ECHOK ->
+                        attr.setLocalFlag(Attributes.LocalFlag.ECHOK, e.getValue() != 0);
+                case ECHONL ->
+                        attr.setLocalFlag(Attributes.LocalFlag.ECHONL, e.getValue() != 0);
                 case ICANON ->
                         attr.setLocalFlag(Attributes.LocalFlag.ICANON, e.getValue() != 0);
                 case ISIG ->
                         attr.setLocalFlag(Attributes.LocalFlag.ISIG, e.getValue() != 0);
+                case NOFLSH ->
+                        attr.setLocalFlag(Attributes.LocalFlag.NOFLSH, e.getValue() != 0);
+                case TOSTOP ->
+                        attr.setLocalFlag(Attributes.LocalFlag.TOSTOP, e.getValue() != 0);
+                case IEXTEN ->
+                        attr.setLocalFlag(Attributes.LocalFlag.IEXTEN, e.getValue() != 0);
+                case ECHOCTL ->
+                        attr.setLocalFlag(Attributes.LocalFlag.ECHOCTL, e.getValue() != 0);
+                case ECHOKE ->
+                        attr.setLocalFlag(Attributes.LocalFlag.ECHOKE, e.getValue() != 0);
+                case PENDIN ->
+                        attr.setLocalFlag(Attributes.LocalFlag.PENDIN, e.getValue() != 0);
                 case ICRNL ->
                         attr.setInputFlag(Attributes.InputFlag.ICRNL, e.getValue() != 0);
+                case IGNPAR ->
+                        attr.setInputFlag(Attributes.InputFlag.IGNPAR, e.getValue() != 0);
+                case PARMRK ->
+                        attr.setInputFlag(Attributes.InputFlag.PARMRK, e.getValue() != 0);
+                case INPCK ->
+                        attr.setInputFlag(Attributes.InputFlag.INPCK, e.getValue() != 0);
+                case ISTRIP ->
+                        attr.setInputFlag(Attributes.InputFlag.ISTRIP, e.getValue() != 0);
                 case INLCR ->
                         attr.setInputFlag(Attributes.InputFlag.INLCR, e.getValue() != 0);
                 case IGNCR ->
                         attr.setInputFlag(Attributes.InputFlag.IGNCR, e.getValue() != 0);
+                case IXON ->
+                        attr.setInputFlag(Attributes.InputFlag.IXON, e.getValue() != 0);
+                case IXANY ->
+                        attr.setInputFlag(Attributes.InputFlag.IXANY, e.getValue() != 0);
+                case IXOFF ->
+                        attr.setInputFlag(Attributes.InputFlag.IXOFF, e.getValue() != 0);
+                case IMAXBEL ->
+                        attr.setInputFlag(Attributes.InputFlag.IMAXBEL, e.getValue() != 0);
+                case IUTF8 ->
+                        attr.setInputFlag(Attributes.InputFlag.IUTF8, e.getValue() != 0);
                 case OCRNL ->
                         attr.setOutputFlag(Attributes.OutputFlag.OCRNL, e.getValue() != 0);
                 case ONLCR ->
@@ -91,9 +137,14 @@ public final class SshShellUtils {
                         attr.setOutputFlag(Attributes.OutputFlag.ONLRET, e.getValue() != 0);
                 case OPOST ->
                         attr.setOutputFlag(Attributes.OutputFlag.OPOST, e.getValue() != 0);
-                default -> {
+                case ONOCR ->
+                        attr.setOutputFlag(Attributes.OutputFlag.ONOCR, e.getValue() != 0);
+
+                case VFLUSH, VSWTCH, IUCLC, XCASE, OLCUC, TTY_OP_ISPEED, TTY_OP_OSPEED -> {
+                        if (LOGGER.isTraceEnabled()) {
+                            LOGGER.trace("Unsupported PTY mode [{}] with value [{}] will be ignored", e.getKey(), e.getValue());
+                        }
                 }
-                // nothing to do
             }
         }
     }

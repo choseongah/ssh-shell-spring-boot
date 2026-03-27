@@ -20,7 +20,7 @@ import org.apache.sshd.common.channel.PtyMode;
 import org.jline.terminal.Attributes;
 import org.junit.jupiter.api.Test;
 
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -30,7 +30,7 @@ class SshShellUtilsTest {
     @Test
     void testFillAttributes() {
         Attributes attributes = new Attributes();
-        Map<PtyMode, Integer> map = new HashMap<>();
+        Map<PtyMode, Integer> map = new EnumMap<>(PtyMode.class);
         for (PtyMode value : PtyMode.values()) {
             map.put(value, 1);
         }
