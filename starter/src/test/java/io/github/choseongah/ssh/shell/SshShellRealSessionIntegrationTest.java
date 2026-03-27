@@ -113,6 +113,7 @@ class SshShellRealSessionIntegrationTest {
         assertEquals("dumb", info.term());
         assertEquals("true", info.historyPresent());
         assertEquals("false", info.localPrompt());
+        assertEquals("ExternalTerminal", info.terminalKind());
     }
 
     @Test
@@ -153,6 +154,7 @@ class SshShellRealSessionIntegrationTest {
         assertEquals("dumb", info.term());
         assertEquals("true", info.historyPresent());
         assertEquals("false", info.localPrompt());
+        assertEquals("ExternalTerminal", info.terminalKind());
     }
 
     @Test
@@ -173,6 +175,7 @@ class SshShellRealSessionIntegrationTest {
 
             assertTrue(stopped.sessionId() > 0);
             assertFalse(errBuffer.toString(StandardCharsets.UTF_8).contains("SshChannelClosedException"));
+            assertFalse(errBuffer.toString(StandardCharsets.UTF_8).contains("java.io.IOException: Stream Closed"));
         } finally {
             System.setErr(originalErr);
         }
@@ -352,9 +355,12 @@ class SshShellRealSessionIntegrationTest {
             String name = authentication != null ? authentication.getName() : "";
             String principal = authentication != null && authentication.getPrincipal() != null
                     ? authentication.getPrincipal().toString() : "";
+            String terminalKind = SshShellCommandFactory.SSH_THREAD_CONTEXT.get() != null
+                    && SshShellCommandFactory.SSH_THREAD_CONTEXT.get().getTerminal() != null
+                    ? SshShellCommandFactory.SSH_THREAD_CONTEXT.get().getTerminal().getClass().getSimpleName() : "";
             return "SESSION_INFO|" + sessionId + "|" + name + "|" + principal + "|" + details + "|" + credentials
                     + "|" + authorities + "|" + term + "|" + (helper.getHistory() != null) + "|"
-                    + helper.isLocalPrompt() + "|END";
+                    + helper.isLocalPrompt() + "|" + terminalKind + "|END";
         }
     }
 
@@ -385,7 +391,8 @@ class SshShellRealSessionIntegrationTest {
     }
 
     record SessionInfo(long sessionId, String name, String principal, String details, String credentials,
-                       String authorities, String term, String historyPresent, String localPrompt) {
+                       String authorities, String term, String historyPresent, String localPrompt,
+                       String terminalKind) {
 
         static SessionInfo parse(String output) {
             int start = output.indexOf("SESSION_INFO|");
@@ -395,7 +402,7 @@ class SshShellRealSessionIntegrationTest {
             }
             String[] values = output.substring(start, end).split("\\|", -1);
             return new SessionInfo(Long.parseLong(values[1]), values[2], values[3], values[4], values[5], values[6],
-                    values[7], values[8], values[9]);
+                    values[7], values[8], values[9], values[10]);
         }
     }
 

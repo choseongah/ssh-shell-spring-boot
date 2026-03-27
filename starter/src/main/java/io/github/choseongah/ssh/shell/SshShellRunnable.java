@@ -36,7 +36,7 @@ import org.jline.reader.impl.history.DefaultHistory;
 import org.jline.terminal.Attributes;
 import org.jline.terminal.Size;
 import org.jline.terminal.Terminal;
-import org.jline.terminal.TerminalBuilder;
+import org.jline.terminal.impl.ExternalTerminal;
 import org.jline.utils.AttributedStringBuilder;
 import org.jline.utils.AttributedStyle;
 import org.jspecify.annotations.NonNull;
@@ -103,32 +103,15 @@ public class SshShellRunnable implements Runnable {
     @Override
     public void run() {
         LOGGER.debug("{}: running...", session);
-        TerminalBuilder terminalBuilder = TerminalBuilder.builder()
-                .system(false)
-                .streams(is, new SafeTerminalOutputStream(os));
-        boolean sizeAvailable = false;
-        if (sshEnv.getEnv().containsKey(SSH_ENV_COLUMNS) && sshEnv.getEnv().containsKey(SSH_ENV_LINES)) {
-            try {
-                terminalBuilder.size(new Size(
-                        Integer.parseInt(sshEnv.getEnv().get(SSH_ENV_COLUMNS)),
-                        Integer.parseInt(sshEnv.getEnv().get(SSH_ENV_LINES))
-                ));
-                sizeAvailable = true;
-            } catch (NumberFormatException e) {
-                LOGGER.debug("Unable to get terminal size : {}:{}", e.getClass().getSimpleName(), e.getMessage());
-            }
-        }
-        if (sshEnv.getEnv().containsKey(SSH_ENV_TERM)) {
-            terminalBuilder.type(sshEnv.getEnv().get(SSH_ENV_TERM));
-        }
+        Size terminalSize = resolveTerminalSize();
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
              PrintStream ps = new PrintStream(baos, true, StandardCharsets.UTF_8);
-             Terminal terminal = terminalBuilder.build()) {
+             Terminal terminal = createTerminal()) {
             History history = new DefaultHistory();
             boolean sessionStarted = false;
             SshContext sshContext = null;
             try {
-                configureTerminal(terminal, sizeAvailable);
+                configureTerminal(terminal, terminalSize);
                 printBanner(baos, ps, terminal);
 
                 LineReader reader = createLineReader(terminal, history);
@@ -311,16 +294,44 @@ public class SshShellRunnable implements Runnable {
                 .toAnsi();
     }
 
-    private void configureTerminal(Terminal terminal, boolean sizeAvailable) {
+    private Terminal createTerminal() throws IOException {
+        return new ExternalTerminal(
+                "JLine terminal",
+                sshEnv.getEnv().get(SSH_ENV_TERM),
+                is,
+                new SafeTerminalOutputStream(os),
+                null
+        );
+    }
+
+    private Size resolveTerminalSize() {
+        if (!sshEnv.getEnv().containsKey(SSH_ENV_COLUMNS) || !sshEnv.getEnv().containsKey(SSH_ENV_LINES)) {
+            return null;
+        }
+        try {
+            return new Size(
+                    Integer.parseInt(sshEnv.getEnv().get(SSH_ENV_COLUMNS)),
+                    Integer.parseInt(sshEnv.getEnv().get(SSH_ENV_LINES))
+            );
+        } catch (NumberFormatException e) {
+            LOGGER.debug("Unable to get terminal size : {}:{}", e.getClass().getSimpleName(), e.getMessage());
+            return null;
+        }
+    }
+
+    private void configureTerminal(Terminal terminal, Size terminalSize) {
         Attributes attr = terminal.getAttributes();
         SshShellUtils.fill(attr, sshEnv.getPtyModes());
         terminal.setAttributes(attr);
 
-        if (sizeAvailable) {
+        if (terminalSize != null) {
+            terminal.setSize(terminalSize);
             sshEnv.addSignalListener((channel, signal) -> {
-                terminal.setSize(new Size(
-                        Integer.parseInt(sshEnv.getEnv().get(SSH_ENV_COLUMNS)),
-                        Integer.parseInt(sshEnv.getEnv().get(SSH_ENV_LINES))));
+                Size updatedSize = resolveTerminalSize();
+                if (updatedSize == null) {
+                    return;
+                }
+                terminal.setSize(updatedSize);
                 terminal.raise(Terminal.Signal.WINCH);
             }, Signal.WINCH);
         }
