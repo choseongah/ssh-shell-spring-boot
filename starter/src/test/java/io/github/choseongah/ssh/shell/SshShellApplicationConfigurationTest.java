@@ -16,6 +16,7 @@
 
 package io.github.choseongah.ssh.shell;
 
+import io.github.choseongah.ssh.shell.commands.StacktraceCommand;
 import org.jline.utils.AttributedStyle;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -27,6 +28,7 @@ import org.springframework.test.annotation.DirtiesContext;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE, classes =
@@ -50,6 +52,9 @@ class SshShellApplicationConfigurationTest
     @Autowired
     private SshShellCommandFactory sshShellCommandFactory;
 
+    @Autowired
+    private StacktraceCommand stacktraceCommand;
+
     @Test
     void testCommandAvailability() {
         setActuatorRole();
@@ -68,6 +73,13 @@ class SshShellApplicationConfigurationTest
                 AttributedStyle.DEFAULT.foreground(PromptColor.RED.toJlineAttributedStyle()).getStyle(),
                 promptProvider.getPrompt().styleAt(0).getStyle()
         );
+    }
+
+    @Test
+    void stacktraceCommandIsEnabledByDefault() {
+        assertNotNull(stacktraceCommand);
+        assertTrue(properties.getCommands().getStacktrace().isEnabled());
+        assertFalse(properties.getCommands().getStacktrace().isRestricted());
     }
 
     @SpringBootApplication

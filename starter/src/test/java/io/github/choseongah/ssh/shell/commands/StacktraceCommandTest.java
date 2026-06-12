@@ -23,9 +23,27 @@ import io.github.choseongah.ssh.shell.SshShellProperties;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class StacktraceCommandTest {
+
+    @Test
+    void stacktraceEnabledByDefault() {
+        SshShellProperties properties = new SshShellProperties();
+        StacktraceCommand cmd = new StacktraceCommand(new SshShellHelper(null), properties);
+        SshShellCommandFactory.SSH_THREAD_CONTEXT.set(null);
+        try {
+            assertTrue(properties.getCommands().getStacktrace().isEnabled());
+            assertFalse(properties.getCommands().getStacktrace().isRestricted());
+            assertTrue(cmd.stacktraceAvailability().isAvailable());
+
+            properties.getCommands().getStacktrace().setEnabled(false);
+            assertFalse(cmd.stacktraceAvailability().isAvailable());
+        } finally {
+            SshShellCommandFactory.SSH_THREAD_CONTEXT.remove();
+        }
+    }
 
     @Test
     void stacktraceEmpty() {

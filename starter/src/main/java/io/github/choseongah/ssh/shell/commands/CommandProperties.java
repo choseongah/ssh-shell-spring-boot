@@ -68,6 +68,29 @@ public class CommandProperties {
     }
 
     /**
+     * Create properties for enabled command
+     *
+     * @return enabled command
+     */
+    public static CommandProperties enabledByDefault() {
+        CommandProperties properties = new CommandProperties();
+        properties.setEnabled(true);
+        return properties;
+    }
+
+    /**
+     * Create properties for enabled and not restricted command
+     *
+     * @return enabled and not restricted command
+     */
+    public static CommandProperties enabledAndNotRestrictedByDefault() {
+        CommandProperties properties = enabledByDefault();
+        properties.setRestricted(false);
+        properties.setAuthorizedRoles(null);
+        return properties;
+    }
+
+    /**
      * Create properties for command with authorized roles
      *
      * @return command with authorized roles

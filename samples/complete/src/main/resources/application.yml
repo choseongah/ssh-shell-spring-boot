@@ -12,6 +12,7 @@ ssh:
         enabled: true
       stacktrace:
         enabled: true
+        restricted: false
       tasks:
         enabled: true
       system:

@@ -136,7 +136,7 @@ public class SshShellProperties {
         private CommandProperties history = new CommandProperties();
 
         @NestedConfigurationProperty
-        private CommandProperties stacktrace = new CommandProperties();
+        private CommandProperties stacktrace = CommandProperties.enabledAndNotRestrictedByDefault();
 
         @NestedConfigurationProperty
         private CommandProperties datasource = CommandProperties.withExcludedByDefault(
