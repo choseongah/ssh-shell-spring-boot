@@ -7,9 +7,9 @@ import org.gradle.testing.jacoco.plugins.JacocoPluginExtension
 import org.gradle.testing.jacoco.tasks.JacocoReport
 
 plugins {
-    id("org.sonarqube") version "7.2.3.7755"
+    id("org.sonarqube") version "7.3.1.8318"
     id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
-    id("org.springframework.boot") version "4.0.5" apply false
+    id("org.springframework.boot") version "4.1.0" apply false
     id("io.spring.dependency-management") version "1.1.7" apply false
 }
 
@@ -59,7 +59,7 @@ subprojects {
         add("testCompileOnly", "org.projectlombok:lombok:$lombokVersion")
         add("testAnnotationProcessor", "org.projectlombok:lombok:$lombokVersion")
         add("testAnnotationProcessor", "org.springframework.boot:spring-boot-configuration-processor:$springBootVersion")
-        add("testRuntimeOnly", "org.junit.platform:junit-platform-launcher")
+        add("testRuntimeOnly", "org.junit.platform:junit-platform-launcher:6.1.0")
     }
 
     tasks.withType<JavaCompile>().configureEach {

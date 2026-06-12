@@ -104,7 +104,7 @@ ssh:
       color: white
       text: 'shell>'
     commands:
-      # all starter command groups are disabled by default in the Spring Shell 4 line
+      # all starter command groups except stacktrace are disabled by default in the Spring Shell 4 line
       actuator:
         enabled: false
         restricted: true
@@ -184,16 +184,16 @@ ssh:
         authorized-roles:
           - ADMIN
       stacktrace:
-        enabled: false
-        restricted: true
+        enabled: true
+        restricted: false
         # empty by default
         includes:
           - ...
         # empty by default
         excludes:
           - ...
+        # not used if restricted is false
         authorized-roles:
-          - ADMIN
       system:
         enabled: false
         restricted: true

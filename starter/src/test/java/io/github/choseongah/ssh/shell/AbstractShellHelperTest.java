@@ -57,6 +57,7 @@ public abstract class AbstractShellHelperTest {
         h = new SshShellHelper(null, ter, lr);
         when(ter.getType()).thenReturn("osx");
         when(ter.getSize()).thenReturn(new Size(123, 40));
+        when(ter.getBufferSize()).thenAnswer(invocation -> ter.getSize());
     }
 
     @AfterEach

@@ -24,7 +24,7 @@ dependencies {
     api("org.springframework.boot:spring-boot-autoconfigure")
     api("org.springframework.shell:spring-shell-starter")
     api("org.springframework.shell:spring-shell-jline")
-    compileOnly("tools.jackson.core:jackson-databind")
+    compileOnly("tools.jackson.core:jackson-databind:3.2.0")
     compileOnly("org.springframework.boot:spring-boot-starter-actuator")
     compileOnly("org.springframework.boot:spring-boot-session")
     compileOnly("org.springframework.boot:spring-boot-starter-security")
