@@ -59,7 +59,7 @@ subprojects {
         add("testCompileOnly", "org.projectlombok:lombok:$lombokVersion")
         add("testAnnotationProcessor", "org.projectlombok:lombok:$lombokVersion")
         add("testAnnotationProcessor", "org.springframework.boot:spring-boot-configuration-processor:$springBootVersion")
-        add("testRuntimeOnly", "org.junit.platform:junit-platform-launcher:6.1.0")
+        add("testRuntimeOnly", "org.junit.platform:junit-platform-launcher:6.1.2")
     }
 
     tasks.withType<JavaCompile>().configureEach {
