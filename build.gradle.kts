@@ -9,7 +9,7 @@ import org.gradle.testing.jacoco.tasks.JacocoReport
 plugins {
     id("org.sonarqube") version "7.3.1.8318"
     id("io.github.gradle-nexus.publish-plugin") version "2.0.0"
-    id("org.springframework.boot") version "4.1.0" apply false
+    id("org.springframework.boot") version "4.1.1" apply false
     id("io.spring.dependency-management") version "1.1.7" apply false
 }
 
